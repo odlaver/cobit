@@ -56,4 +56,19 @@ class Duel extends Model
     {
         return $this->hasMany(DuelRound::class)->orderBy('round_number');
     }
+
+    public function hasPlayer(User $user): bool
+    {
+        return in_array($user->id, $this->playerIds(), true);
+    }
+
+    public function opponentOf(User $user): User
+    {
+        return $user->id === (int) $this->player1_id ? $this->player2 : $this->player1;
+    }
+
+    public function playerIds(): array
+    {
+        return [(int) $this->player1_id, (int) $this->player2_id];
+    }
 }
