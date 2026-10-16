@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BattleController;
+use App\Http\Controllers\DuelController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -33,6 +35,10 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:mahasiswa')->group(function () {
         Route::view('/dashboard', 'dashboard')->name('dashboard');
+
+        Route::get('/duels/{duel}/battle', [BattleController::class, 'show'])->name('duels.battle');
+        Route::post('/duels/{duel}/battle', [BattleController::class, 'answer'])->name('duels.battle.answer');
+        Route::get('/duels/{duel}/battle/state', [BattleController::class, 'state'])->name('duels.battle.state');
     });
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
