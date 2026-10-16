@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('duel_round_questions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('duel_round_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('question_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('question_id')->constrained()->restrictOnDelete();
             $table->unsignedTinyInteger('position');
             $table->timestamps();
 

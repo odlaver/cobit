@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('duel_round_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('question_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('question_id')->constrained()->restrictOnDelete();
             $table->char('selected_answer', 1)->nullable();
             $table->boolean('is_correct')->default(false);
             $table->timestamp('served_at', 3);

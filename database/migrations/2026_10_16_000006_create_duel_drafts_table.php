@@ -14,7 +14,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('round_number');
             $table->unsignedTinyInteger('step');
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('course_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('course_id')->constrained()->restrictOnDelete();
             $table->string('action', 10);
             $table->boolean('is_auto')->default(false);
             $table->timestamps();
