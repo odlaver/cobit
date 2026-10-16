@@ -21,6 +21,7 @@
                         <a href="{{ route('admin.dashboard') }}" class="hover:text-white">Dashboard Admin</a>
                     @else
                         <a href="{{ route('dashboard') }}" class="hover:text-white">Dashboard</a>
+                        <a href="{{ route('duels.index') }}" class="hover:text-white">Riwayat</a>
                     @endif
                     <a href="{{ route('leaderboard') }}" class="hover:text-white">Leaderboard</a>
                 </div>

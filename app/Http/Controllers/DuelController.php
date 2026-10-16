@@ -18,6 +18,25 @@ class DuelController extends Controller
     {
     }
 
+    public function index(Request $request): View
+    {
+        $user = $request->user();
+
+        $active = $user->duels()
+            ->where('status', '!=', Duel::STATUS_FINISHED)
+            ->with(['player1', 'player2'])
+            ->latest()
+            ->get();
+
+        $finished = $user->duels()
+            ->where('status', Duel::STATUS_FINISHED)
+            ->with(['player1', 'player2', 'rounds'])
+            ->latest('finished_at')
+            ->paginate(10);
+
+        return view('duels.index', compact('user', 'active', 'finished'));
+    }
+
     public function show(Request $request, Duel $duel): RedirectResponse
     {
         abort_unless($duel->hasPlayer($request->user()), 403);
