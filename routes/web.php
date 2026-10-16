@@ -36,6 +36,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:mahasiswa')->group(function () {
         Route::view('/dashboard', 'dashboard')->name('dashboard');
 
+        Route::get('/duels/{duel}', [DuelController::class, 'show'])->name('duels.show');
+        Route::get('/duels/{duel}/result', [DuelController::class, 'result'])->name('duels.result');
         Route::get('/duels/{duel}/battle', [BattleController::class, 'show'])->name('duels.battle');
         Route::post('/duels/{duel}/battle', [BattleController::class, 'answer'])->name('duels.battle.answer');
         Route::get('/duels/{duel}/battle/state', [BattleController::class, 'state'])->name('duels.battle.state');
