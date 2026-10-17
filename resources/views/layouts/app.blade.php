@@ -19,6 +19,7 @@
                 <div class="flex flex-wrap gap-4 text-sm font-medium text-navy-100">
                     @if (auth()->user()->isAdmin())
                         <a href="{{ route('admin.dashboard') }}" class="hover:text-white">Dashboard Admin</a>
+                        <a href="{{ route('admin.courses.index') }}" class="hover:text-white">Mata Kuliah</a>
                     @else
                         <a href="{{ route('dashboard') }}" class="hover:text-white">Dashboard</a>
                     @endif
@@ -55,5 +56,36 @@
 
         @yield('content')
     </main>
+
+    <script>
+        document.addEventListener('click', function (e) {
+            var toggleBtn = e.target.closest('[data-dropdown-toggle]');
+            var allMenus = document.querySelectorAll('[data-dropdown-menu]');
+
+            if (toggleBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                var targetId = toggleBtn.getAttribute('data-dropdown-toggle');
+                var targetMenu = document.getElementById(targetId);
+
+                allMenus.forEach(function (m) {
+                    if (m !== targetMenu) {
+                        m.classList.add('hidden');
+                    }
+                });
+
+                if (targetMenu) {
+                    targetMenu.classList.toggle('hidden');
+                }
+                return;
+            }
+
+            if (!e.target.closest('[data-dropdown-menu]')) {
+                allMenus.forEach(function (m) {
+                    m.classList.add('hidden');
+                });
+            }
+        });
+    </script>
 </body>
 </html>

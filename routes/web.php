@@ -3,6 +3,10 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\CourseController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\MaterialController;
+use App\Http\Controllers\Admin\QuestionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -36,6 +40,11 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
-        Route::view('/', 'admin.dashboard')->name('dashboard');
+        Route::get('/', DashboardController::class)->name('dashboard');
+        Route::resource('courses', CourseController::class);
+        Route::resource('materials', MaterialController::class)->except('show');
+        Route::resource('questions', QuestionController::class)->except('show');
+        Route::patch('questions/{question}/toggle-status', [QuestionController::class, 'toggleStatus'])->name('questions.toggle-status');
+        Route::patch('questions/{question}/approve', [QuestionController::class, 'approve'])->name('questions.approve');
     });
 });
