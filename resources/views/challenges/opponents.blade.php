@@ -3,10 +3,13 @@
 @section('title', 'Cari Lawan')
 
 @section('content')
-    <div class="mx-auto max-w-4xl space-y-6">
+    <div class="space-y-6">
         <div>
-            <h1 class="text-2xl font-bold">Cari lawan</h1>
-            <p class="text-sm text-navy-500">Pilih mahasiswa untuk kamu tantang berduel.</p>
+            <a href="{{ route('challenges.index') }}" class="-ml-1 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-navy-600 hover:text-navy-900">
+                <x-icon name="back" /> Kembali ke Tantangan
+            </a>
+            <h1 class="mt-2 text-2xl font-bold">Cari lawan</h1>
+            <p class="mt-1 text-sm text-navy-600">Pilih mahasiswa untuk kamu tantang berduel.</p>
         </div>
 
         <form method="GET" action="{{ route('challenges.opponents') }}" class="flex flex-wrap gap-3">
@@ -69,4 +72,6 @@
 
         <div>{{ $opponents->links() }}</div>
     </div>
+
+    @include('challenges.partials.watch')
 @endsection

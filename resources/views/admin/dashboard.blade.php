@@ -3,70 +3,61 @@
 @section('title', 'Dashboard Admin')
 
 @section('content')
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-navy-900">Dashboard Admin</h1>
-            <p class="text-sm text-navy-500">Ringkasan kurikulum, pool turnamen, dan manajemen bank soal</p>
+            <p class="mt-1 text-sm text-navy-600">Ringkasan kurikulum, pool turnamen, dan manajemen bank soal</p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <x-button :href="route('admin.courses.create')" variant="primary">+ Tambah Mata Kuliah</x-button>
+            <x-button :href="route('admin.courses.create')" variant="primary"><x-icon name="plus" /> Tambah Mata Kuliah</x-button>
         </div>
     </div>
 
-    <!-- Statistik Cards -->
-    <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <x-card class="border-l-4 border-l-ungu-500">
-            <p class="text-xs font-semibold uppercase tracking-wider text-navy-500">Total Pengguna</p>
-            <p class="mt-2 text-3xl font-extrabold text-navy-900">{{ number_format($userCount) }}</p>
-            <p class="mt-1 text-xs text-navy-500">Admin & Mahasiswa</p>
-        </x-card>
+    @php $ready = $courses->filter(fn ($c) => $c->active_questions_count >= 10 && $c->is_active)->count(); @endphp
 
-        <x-card class="border-l-4 border-l-cyan-400">
-            <p class="text-xs font-semibold uppercase tracking-wider text-navy-500">Total Duel</p>
-            <p class="mt-2 text-3xl font-extrabold text-navy-900">{{ number_format($duelCount) }}</p>
-            <p class="mt-1 text-xs text-navy-500">Pertandingan turnamen</p>
-        </x-card>
-
-        <x-card class="border-l-4 border-l-navy-700">
-            <p class="text-xs font-semibold uppercase tracking-wider text-navy-500">Total Soal</p>
-            <p class="mt-2 text-3xl font-extrabold text-navy-900">{{ number_format($questionCount) }}</p>
-            <p class="mt-1 text-xs text-navy-500">Semua bank soal</p>
-        </x-card>
-
-        <x-card class="border-l-4 border-l-emerald-500">
-            <p class="text-xs font-semibold uppercase tracking-wider text-navy-500">Total Mata Kuliah</p>
-            <p class="mt-2 text-3xl font-extrabold text-navy-900">{{ number_format($courses->count()) }}</p>
-            <p class="mt-1 text-xs text-navy-500">Semester 1–5</p>
-        </x-card>
-    </div>
+    <!-- Statistik -->
+    <dl class="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div class="rounded-xl bg-navy-900 px-5 py-4 text-white">
+            <dt class="text-sm text-navy-200">Matkul siap pool</dt>
+            <dd class="mt-1 text-3xl font-extrabold tabular-nums">{{ $ready }}<span class="text-lg font-semibold text-navy-300">/{{ $courses->count() }}</span></dd>
+        </div>
+        <div class="rounded-xl border border-navy-100 bg-white px-5 py-4">
+            <dt class="text-sm text-navy-600">Total soal</dt>
+            <dd class="mt-1 text-3xl font-extrabold tabular-nums">{{ number_format($questionCount) }}</dd>
+        </div>
+        <div class="rounded-xl border border-navy-100 bg-white px-5 py-4">
+            <dt class="text-sm text-navy-600">Total duel</dt>
+            <dd class="mt-1 text-3xl font-extrabold tabular-nums">{{ number_format($duelCount) }}</dd>
+        </div>
+        <div class="rounded-xl border border-navy-100 bg-white px-5 py-4">
+            <dt class="text-sm text-navy-600">Pengguna</dt>
+            <dd class="mt-1 text-3xl font-extrabold tabular-nums">{{ number_format($userCount) }}</dd>
+        </div>
+    </dl>
 
     <!-- Tabel Soal per Matkul -->
     <x-card title="Mata Kuliah & Distribusi Soal">
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-navy-500">
-            <span class="inline-flex items-center gap-1.5 font-medium text-navy-700">
-                <span class="inline-block h-2 w-2 rounded-full bg-emerald-500"></span>
-                Syarat pool turnamen: Memiliki &ge; 10 soal aktif
-            </span>
-            <span class="text-slate-400">Klik nama mata kuliah atau tombol "Pilihan" untuk kelola materi & soal</span>
-        </div>
+        <p class="-mt-2 mb-4 text-sm text-navy-600">
+            Matkul masuk pool duel kalau aktif dan punya minimal 10 soal aktif. Buka nama matkul untuk kelola materi dan soalnya.
+        </p>
 
         <div class="overflow-visible">
             <table class="w-full text-left text-sm">
                 <thead class="bg-navy-900 text-xs uppercase tracking-wide text-navy-100">
                     <tr>
-                        <th class="px-4 py-3">Kode</th>
+                        <th class="hidden md:table-cell px-4 py-3">Kode</th>
                         <th class="px-4 py-3">Mata Kuliah</th>
-                        <th class="px-4 py-3 text-center">Semester</th>
-                        <th class="px-4 py-3 text-center">Materi</th>
-                        <th class="px-4 py-3 text-center">Jumlah Soal</th>
-                        <th class="px-4 py-3 text-center">Status Pool</th>
+                        <th class="hidden md:table-cell px-4 py-3 text-center">Semester</th>
+                        <th class="hidden md:table-cell px-4 py-3 text-center">Materi</th>
+                        <th class="hidden md:table-cell px-4 py-3 text-center">Soal Aktif</th>
+                        <th class="hidden px-4 py-3 text-center sm:table-cell">Status Pool</th>
                         <th class="px-4 py-3 text-right">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-navy-50">
                     @forelse ($courses as $course)
                         <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="px-4 py-3 font-mono font-bold text-navy-700">{{ $course->code }}</td>
+                            <td class="hidden px-4 py-3 font-mono font-bold text-navy-700 md:table-cell">{{ $course->code }}</td>
                             <td class="px-4 py-3">
                                 <a href="{{ route('admin.courses.show', $course) }}" class="font-bold text-navy-900 hover:text-ungu-600 hover:underline">
                                     {{ $course->name }}
@@ -74,33 +65,36 @@
                                 @if (!$course->is_active)
                                     <span class="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-700">Nonaktif</span>
                                 @endif
+                                <span @class(['mt-0.5 block text-xs font-semibold sm:hidden', 'text-emerald-700' => $course->active_questions_count >= 10 && $course->is_active, 'text-amber-700' => ! ($course->active_questions_count >= 10 && $course->is_active)])>
+                                    {{ $course->active_questions_count >= 10 && $course->is_active ? 'Siap pool' : 'Belum siap pool' }} · {{ $course->active_questions_count }} soal aktif
+                                </span>
                             </td>
-                            <td class="px-4 py-3 text-center text-navy-700">Sem {{ $course->semester }}</td>
-                            <td class="px-4 py-3 text-center font-medium text-navy-700">
+                            <td class="hidden px-4 py-3 text-center text-navy-700 md:table-cell">Sem {{ $course->semester }}</td>
+                            <td class="hidden px-4 py-3 text-center font-medium text-navy-700 md:table-cell">
                                 <a href="{{ route('admin.courses.show', $course) }}" class="hover:underline hover:text-ungu-600">
                                     {{ $course->materials_count }} Materi
                                 </a>
                             </td>
-                            <td class="px-4 py-3 text-center font-bold {{ $course->questions_count >= 10 ? 'text-ungu-600' : 'text-amber-600' }}">
+                            <td class="hidden px-4 py-3 text-center font-bold md:table-cell {{ $course->active_questions_count >= 10 ? 'text-ungu-600' : 'text-amber-600' }}">
                                 <a href="{{ route('admin.courses.show', $course) }}" class="hover:underline">
-                                    {{ $course->questions_count }}
+                                    {{ $course->active_questions_count }}<span class="font-normal text-navy-500">/{{ $course->questions_count }}</span>
                                 </a>
                             </td>
-                            <td class="px-4 py-3 text-center">
-                                @if ($course->questions_count >= 10 && $course->is_active)
+                            <td class="hidden px-4 py-3 text-center sm:table-cell">
+                                @if ($course->active_questions_count >= 10 && $course->is_active)
                                     <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
                                         Siap Pool
                                     </span>
                                 @else
                                     <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                                        {{ $course->questions_count < 10 ? 'Kurang ' . (10 - $course->questions_count) . ' Soal' : 'Nonaktif' }}
+                                        {{ $course->active_questions_count < 10 ? 'Kurang ' . (10 - $course->active_questions_count) . ' soal aktif' : 'Nonaktif' }}
                                     </span>
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <div class="relative inline-block text-left">
-                                    <button type="button" data-dropdown-toggle="dropdown-course-{{ $course->id }}"
-                                        class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-navy-800 shadow-2xs hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-ungu-500">
+                                    <button type="button" data-dropdown-toggle="dropdown-course-{{ $course->id }}" aria-haspopup="true" aria-expanded="false"
+                                        class="act gap-1.5">
                                         <span>Pilihan</span>
                                         <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -114,7 +108,7 @@
                                             {{ $course->code }} &bull; Sem {{ $course->semester }}
                                         </div>
                                         <a href="{{ route('admin.courses.show', $course) }}"
-                                            class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-navy-800 hover:bg-slate-100">
+                                            class="flex min-h-11 items-center gap-2 px-3 py-2 text-xs sm:min-h-0 font-semibold text-navy-800 hover:bg-slate-100">
                                             <svg class="h-4 w-4 text-ungu-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -122,14 +116,14 @@
                                             Buka Materi & Soal
                                         </a>
                                         <a href="{{ route('admin.materials.create', ['course_id' => $course->id]) }}"
-                                            class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-navy-800 hover:bg-slate-100">
+                                            class="flex min-h-11 items-center gap-2 px-3 py-2 text-xs sm:min-h-0 font-semibold text-navy-800 hover:bg-slate-100">
                                             <svg class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                                             </svg>
                                             Tambah Materi
                                         </a>
                                         <a href="{{ route('admin.questions.create', ['course_id' => $course->id]) }}"
-                                            class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-navy-800 hover:bg-slate-100">
+                                            class="flex min-h-11 items-center gap-2 px-3 py-2 text-xs sm:min-h-0 font-semibold text-navy-800 hover:bg-slate-100">
                                             <svg class="h-4 w-4 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
@@ -137,7 +131,7 @@
                                         </a>
                                         <div class="my-1 border-t border-slate-100"></div>
                                         <a href="{{ route('admin.courses.edit', $course) }}"
-                                            class="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100">
+                                            class="flex min-h-11 items-center gap-2 px-3 py-2 text-xs sm:min-h-0 font-medium text-slate-700 hover:bg-slate-100">
                                             <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                             </svg>
@@ -148,7 +142,7 @@
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"
-                                                class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-red-600 hover:bg-red-50">
+                                                class="flex min-h-11 w-full items-center gap-2 px-3 py-2 text-left text-xs sm:min-h-0 font-medium text-red-600 hover:bg-red-50">
                                                 <svg class="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>

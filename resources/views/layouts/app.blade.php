@@ -10,82 +10,122 @@
 </head>
 <body class="min-h-screen bg-slate-100 font-sans text-navy-900 antialiased">
     @auth
-        <nav class="bg-navy-900 text-white shadow">
-            <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-                <a href="{{ route('home') }}" class="text-lg font-bold tracking-wide">
+        @php
+            $menu = auth()->user()->isAdmin()
+                ? [
+                    ['admin.dashboard', 'Dashboard', 'admin.dashboard'],
+                    ['admin.courses.index', 'Mata Kuliah', 'admin.courses.*|admin.materials.*|admin.questions.*'],
+                ]
+                : [
+                    ['dashboard', 'Dashboard', 'dashboard'],
+                    ['challenges.index', 'Tantangan', 'challenges.*'],
+                    ['duels.index', 'Riwayat', 'duels.*'],
+                ];
+            $menu[] = ['leaderboard', 'Leaderboard', 'leaderboard'];
+        @endphp
+
+        <nav class="bg-navy-900 text-white" aria-label="Menu utama">
+            <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 px-4 sm:h-16 sm:flex-nowrap sm:gap-x-8">
+                <a href="{{ route('home') }}" class="flex min-h-14 items-center text-lg font-extrabold tracking-tight">
                     CO<span class="text-cyan-400">BIT</span>
                 </a>
 
-                <div class="flex flex-wrap gap-4 text-sm font-medium text-navy-100">
-                    @if (auth()->user()->isAdmin())
-                        <a href="{{ route('admin.dashboard') }}" class="hover:text-white">Dashboard Admin</a>
-                        <a href="{{ route('admin.courses.index') }}" class="hover:text-white">Mata Kuliah</a>
-                    @else
-                        <a href="{{ route('dashboard') }}" class="hover:text-white">Dashboard</a>
-                        <a href="{{ route('challenges.index') }}" class="hover:text-white">Tantangan</a>
-                    @endif
-                    <a href="{{ route('leaderboard') }}" class="hover:text-white">Leaderboard</a>
+                {{-- Baris kedua penuh di HP --}}
+                <div class="order-last -mx-4 grid w-[calc(100%+2rem)] grid-flow-col auto-cols-[minmax(0,1fr)] border-t border-white/10 text-sm font-semibold sm:order-none sm:mx-0 sm:flex sm:h-full sm:w-auto sm:gap-6 sm:border-0">
+                    @isset($lockedDuel)
+                        <a href="{{ route('duels.show', $lockedDuel) }}" aria-current="page"
+                            class="relative flex min-h-11 items-center justify-center gap-2 px-4 text-white after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-cyan-400 sm:h-full sm:justify-start sm:px-0 sm:after:inset-x-0">
+                            <span class="size-2 rounded-full bg-cyan-400" aria-hidden="true"></span>
+                            Duel sedang berjalan, menu lain dikunci
+                        </a>
+                    @endisset
+                    @foreach (isset($lockedDuel) ? [] : $menu as [$route, $text, $pattern])
+                        @php $current = request()->routeIs(...explode('|', $pattern)); @endphp
+                        <a href="{{ route($route) }}" @if ($current) aria-current="page" @endif
+                            @class([
+                                'relative flex min-h-11 items-center justify-center px-1 transition-colors max-[359px]:text-xs sm:h-full sm:px-0',
+                                'after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-cyan-400 sm:after:inset-x-0',
+                                'text-white' => $current,
+                                'text-navy-200 after:hidden hover:text-white' => ! $current,
+                            ])>{{ $text }}</a>
+                    @endforeach
                 </div>
 
-                <div class="ml-auto flex items-center gap-3">
-                    <a href="{{ route('profile.show') }}" class="flex items-center gap-2 hover:opacity-90">
+                <div class="ml-auto flex items-center gap-1">
+                    <a @isset($lockedDuel) aria-disabled="true" @else href="{{ route('profile.show') }}" @endisset
+                        @if (request()->routeIs('profile.*')) aria-current="page" @endif
+                        @class(['flex min-h-11 items-center gap-2 rounded-lg px-2 transition-colors', 'hover:bg-navy-800' => ! isset($lockedDuel)])>
                         <x-avatar :user="auth()->user()" size="sm" />
-                        <span class="hidden text-sm font-medium sm:inline">{{ auth()->user()->name }}</span>
+                        <span class="hidden max-w-40 truncate text-sm font-semibold md:inline">{{ auth()->user()->name }}</span>
                         @unless (auth()->user()->isAdmin())
                             <x-tier-badge :points="auth()->user()->points" />
                         @endunless
                     </a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="rounded-md px-2 py-1 text-sm text-navy-100 hover:bg-navy-800 hover:text-white">Keluar</button>
+                        <button type="submit" aria-label="Keluar" title="Keluar"
+                            class="flex size-11 items-center justify-center rounded-lg text-navy-200 transition-colors hover:bg-red-500/15 hover:text-red-400 active:bg-red-500/25">
+                            <x-icon name="logout" class="size-5" />
+                        </button>
                     </form>
                 </div>
             </div>
         </nav>
     @endauth
 
-    <main class="mx-auto max-w-6xl px-4 py-8">
+    <main class="mx-auto px-4 py-6 sm:py-8 @yield('width', 'max-w-6xl')">
         @if (session('success'))
-            <div class="mb-6 rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">{{ session('success') }}</div>
+            <div role="status" class="mb-6 rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm font-medium text-cyan-900">{{ session('success') }}</div>
         @endif
         @if (session('error'))
-            <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ session('error') }}</div>
+            <div role="alert" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{{ session('error') }}</div>
         @endif
         @error('throttle')
-            <div class="mx-auto mb-6 max-w-md rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ $message }}</div>
+            <div role="alert" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{{ $message }}</div>
         @enderror
 
         @yield('content')
     </main>
 
     <script>
+        function closeMenus(except) {
+            document.querySelectorAll('[data-dropdown-menu]').forEach(function (m) {
+                if (m === except) return;
+                m.classList.add('hidden');
+                var btn = document.querySelector('[data-dropdown-toggle="' + m.id + '"]');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+            });
+        }
+
         document.addEventListener('click', function (e) {
             var toggleBtn = e.target.closest('[data-dropdown-toggle]');
-            var allMenus = document.querySelectorAll('[data-dropdown-menu]');
 
             if (toggleBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                var targetId = toggleBtn.getAttribute('data-dropdown-toggle');
-                var targetMenu = document.getElementById(targetId);
-
-                allMenus.forEach(function (m) {
-                    if (m !== targetMenu) {
-                        m.classList.add('hidden');
-                    }
-                });
+                var targetMenu = document.getElementById(toggleBtn.getAttribute('data-dropdown-toggle'));
+                closeMenus(targetMenu);
 
                 if (targetMenu) {
-                    targetMenu.classList.toggle('hidden');
+                    var open = targetMenu.classList.toggle('hidden') === false;
+                    toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
                 }
                 return;
             }
 
             if (!e.target.closest('[data-dropdown-menu]')) {
-                allMenus.forEach(function (m) {
-                    m.classList.add('hidden');
-                });
+                closeMenus(null);
             }
+        });
+
+        // Escape menutup menu, fokus balik
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            var open = document.querySelector('[data-dropdown-menu]:not(.hidden)');
+            if (!open) return;
+            closeMenus(null);
+            var btn = document.querySelector('[data-dropdown-toggle="' + open.id + '"]');
+            if (btn) btn.focus();
         });
     </script>
 </body>

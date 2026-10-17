@@ -15,7 +15,7 @@
     <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold">Tantangan</h1>
-            <p class="text-sm text-navy-500">Tantang lawan, terima atau tolak tantangan yang masuk.</p>
+            <p class="mt-1 text-sm text-navy-600">Tantang lawan, terima atau tolak tantangan yang masuk.</p>
         </div>
         <x-button :href="route('challenges.opponents')">Cari lawan</x-button>
     </div>
@@ -109,9 +109,9 @@
                                 </span>
                             </span>
                             <span class="flex items-center gap-2">
-                                <span class="rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide ring-1 ring-inset {{ $label[1] }}">{{ $label[0] }}</span>
-                                @if ($challenge->status === 'accepted' && $challenge->duel && Route::has('duels.index'))
-                                    <a href="{{ route('duels.index') }}" class="text-sm font-semibold text-ungu-600 underline-offset-2 hover:underline">Lihat duel</a>
+                                <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset {{ $label[1] }}">{{ $label[0] }}</span>
+                                @if ($challenge->status === 'accepted' && $challenge->duel)
+                                    <a href="{{ route('duels.show', $challenge->duel) }}" class="text-sm font-semibold text-ungu-600 underline-offset-2 hover:underline">Lihat duel</a>
                                 @endif
                             </span>
                         </li>
@@ -120,4 +120,6 @@
             @endif
         </x-card>
     </div>
+
+    @include('challenges.partials.watch')
 @endsection

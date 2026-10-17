@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Material;
 use App\Models\Question;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -73,7 +74,15 @@ class QuestionController extends Controller
 
     public function approve(Question $question) { $question->update(['status' => Question::STATUS_ACTIVE]); return back()->with('success', 'Soal disetujui.'); }
 
-    public function destroy(Question $question) { $question->delete(); return back()->with('success', 'Soal berhasil dihapus.'); }
+    public function destroy(Question $question)
+    {
+        try {
+            $question->delete();
+        } catch (QueryException) {
+            return back()->with('error', 'Soal ini sudah dipakai di duel, jadi tidak bisa dihapus. Nonaktifkan saja.');
+        }
+        return back()->with('success', 'Soal berhasil dihapus.');
+    }
 
     private function validated(Request $request): array
     {

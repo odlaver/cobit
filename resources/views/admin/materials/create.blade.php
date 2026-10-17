@@ -1,22 +1,23 @@
 @extends('layouts.app')
 
 @section('title', 'Tambah Materi')
+@section('width', 'max-w-2xl')
 
 @section('content')
     <div class="mb-6">
         @if ($selectedCourseId)
-            <a href="{{ route('admin.courses.show', $selectedCourseId) }}" class="inline-flex items-center text-sm font-medium text-navy-600 hover:text-navy-900">
-                &larr; Kembali ke Detail Mata Kuliah
+            <a href="{{ route('admin.courses.show', $selectedCourseId) }}" class="-ml-1 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-navy-600 hover:text-navy-900">
+                <x-icon name="back" /> Kembali ke Detail Mata Kuliah
             </a>
         @else
-            <a href="{{ route('admin.courses.index') }}" class="inline-flex items-center text-sm font-medium text-navy-600 hover:text-navy-900">
-                &larr; Kembali ke Daftar Mata Kuliah
+            <a href="{{ route('admin.courses.index') }}" class="-ml-1 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-navy-600 hover:text-navy-900">
+                <x-icon name="back" /> Kembali ke Daftar Mata Kuliah
             </a>
         @endif
         <h1 class="mt-2 text-2xl font-bold text-navy-900">Tambah Materi Pembelajaran</h1>
     </div>
 
-    <x-card class="max-w-2xl">
+    <x-card>
         <form method="POST" action="{{ route('admin.materials.store') }}" class="space-y-4">
             @csrf
 
@@ -25,9 +26,9 @@
             @endif
 
             <div>
-                <label for="course_id" class="mb-1.5 block text-sm font-semibold text-slate-700">Mata Kuliah</label>
+                <label for="course_id" class="field-label">Mata Kuliah</label>
                 <select id="course_id" name="course_id" required
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-ungu-500 focus:outline-none focus:ring-4 focus:ring-ungu-100">
+                    class="field py-2.5">
                     <option value="">-- Pilih Mata Kuliah --</option>
                     @foreach ($courses as $c)
                         <option value="{{ $c->id }}" @selected(old('course_id', $selectedCourseId) == $c->id)>
@@ -43,9 +44,9 @@
             <x-input name="title" label="Judul Materi" :value="old('title')" placeholder="Contoh: Normalisasi Basis Data" required />
 
             <div>
-                <label for="description" class="mb-1.5 block text-sm font-semibold text-slate-700">Deskripsi Materi (Opsional)</label>
+                <label for="description" class="field-label">Deskripsi Materi (Opsional)</label>
                 <textarea id="description" name="description" rows="3"
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-ungu-500 focus:outline-none focus:ring-4 focus:ring-ungu-100"
+                    class="field py-2.5"
                     placeholder="Ringkasan atau cakupan materi...">{{ old('description') }}</textarea>
                 @error('description')
                     <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>

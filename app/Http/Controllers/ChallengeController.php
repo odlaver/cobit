@@ -7,6 +7,7 @@ use App\Models\Duel;
 use App\Models\User;
 use App\Services\DraftService;
 use DomainException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,6 +40,19 @@ class ChallengeController extends Controller
             'inboxDone' => $received->where('status', '!=', Challenge::STATUS_PENDING)->values(),
             'sentPending' => $sent->where('status', Challenge::STATUS_PENDING)->values(),
             'sentDone' => $sent->where('status', '!=', Challenge::STATUS_PENDING)->values(),
+        ]);
+    }
+
+    public function status(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $duel = $user->duels()->where('status', '!=', Duel::STATUS_FINISHED)->latest()->first();
+
+        return response()->json([
+            'duel' => $duel?->id,
+            'redirect' => $duel ? route('duels.show', $duel) : null,
+            'inbox' => Challenge::where('opponent_id', $user->id)->where('status', Challenge::STATUS_PENDING)->count(),
+            'sent' => Challenge::where('challenger_id', $user->id)->where('status', Challenge::STATUS_PENDING)->count(),
         ]);
     }
 
@@ -83,7 +97,7 @@ class ChallengeController extends Controller
         $busy = $this->busyUserIds();
 
         if (in_array((int) $user->id, $busy, true) || in_array($opponentId, $busy, true)) {
-            return back()->with('error', 'Tantangan hanya bisa dikirim kalau salah satu pemain tidak sedang berduel.');
+            return back()->with('error', 'Tantangan hanya bisa dikirim kalau kedua pemain tidak sedang berduel.');
         }
 
         if ($this->hasPendingPair($user->id, $opponentId)) {

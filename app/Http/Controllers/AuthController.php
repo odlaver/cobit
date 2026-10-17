@@ -7,9 +7,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
+use Throwable;
 
 class AuthController extends Controller
 {
@@ -42,7 +44,32 @@ class AuthController extends Controller
         RateLimiter::clear($key);
         $request->session()->regenerate();
 
-        return redirect()->intended('/');
+        return redirect($this->landing($request));
+    }
+
+    // Abaikan tujuan milik role lain
+    private function landing(Request $request): string
+    {
+        $intended = $request->session()->pull('url.intended');
+
+        if (! $intended) {
+            return '/';
+        }
+
+        try {
+            $route = Route::getRoutes()->match(Request::create($intended));
+        } catch (Throwable) {
+            return '/';
+        }
+
+        foreach ($route->gatherMiddleware() as $middleware) {
+            if (is_string($middleware) && str_starts_with($middleware, 'role:')
+                && ! in_array($request->user()->role, explode(',', substr($middleware, 5)), true)) {
+                return '/';
+            }
+        }
+
+        return $intended;
     }
 
     public function showRegister(): View

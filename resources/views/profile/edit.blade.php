@@ -1,14 +1,22 @@
 @extends('layouts.app')
 
 @section('title', 'Edit Profil')
+@section('width', 'max-w-2xl')
 
 @section('content')
-    <x-card title="Edit Profil" class="mx-auto max-w-2xl">
+    <div class="mb-6">
+        <a href="{{ route('profile.show') }}" class="-ml-1 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-navy-600 hover:text-navy-900">
+            <x-icon name="back" /> Kembali ke profil
+        </a>
+        <h1 class="mt-2 text-2xl font-bold">Edit profil</h1>
+    </div>
+
+    <x-card>
         <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="space-y-5">
             @csrf
             @method('PUT')
 
-            <div class="flex items-center gap-4">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <x-avatar :user="$user" size="lg" />
                 <div class="flex-1">
                     <x-input name="avatar" label="Foto profil (JPG/PNG/WEBP, maks. 2 MB)" type="file" accept="image/jpeg,image/png,image/webp" />

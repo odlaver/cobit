@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\Material;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 
 class MaterialController extends Controller
@@ -50,5 +51,13 @@ class MaterialController extends Controller
         return redirect()->route('admin.materials.index')->with('success', 'Materi berhasil diperbarui.');
     }
 
-    public function destroy(Material $material) { $material->delete(); return back()->with('success', 'Materi berhasil dihapus.'); }
+    public function destroy(Material $material)
+    {
+        try {
+            $material->delete();
+        } catch (QueryException) {
+            return back()->with('error', 'Ada soal di materi ini yang sudah dipakai duel, jadi materi tidak bisa dihapus.');
+        }
+        return back()->with('success', 'Materi berhasil dihapus.');
+    }
 }

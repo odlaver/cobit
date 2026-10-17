@@ -1,17 +1,18 @@
 @extends('layouts.app')
 
 @section('title', 'Daftar')
+@section('width', 'max-w-sm')
 
 @section('content')
     <div class="mx-auto w-full max-w-sm pt-6 sm:pt-12">
         <div class="mb-8 text-center">
             <p class="text-3xl font-extrabold tracking-tight text-navy-900">CO<span class="text-ungu-500">BIT</span></p>
-            <p class="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Combat of Brains in Tournament</p>
+            <p class="mt-1 text-sm font-medium text-navy-600">Combat of Brains in Tournament</p>
         </div>
 
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <h1 class="text-2xl font-bold tracking-tight text-slate-900">Buat akun</h1>
-            <p class="mt-1.5 text-sm leading-6 text-slate-500">Khusus mahasiswa SI angkatan 24.</p>
+            <p class="mt-1.5 text-sm leading-6 text-slate-600">Khusus mahasiswa SI angkatan 24.</p>
 
             <form method="POST" action="{{ route('register') }}" class="mt-8 space-y-5">
                 @csrf
@@ -25,7 +26,7 @@
             </form>
         </div>
 
-        <p class="mt-6 text-center text-sm text-slate-500">
+        <p class="mt-6 text-center text-sm text-slate-600">
             Sudah punya akun?
             <a href="{{ route('login') }}" class="font-semibold text-ungu-600 hover:text-ungu-700">Masuk</a>
         </p>

@@ -3,30 +3,30 @@
 @section('title', 'Bank Soal')
 
 @section('content')
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-navy-900">Bank Soal</h1>
-            <p class="text-sm text-navy-500">Kelola pertanyaan, pilihan ganda, kunci jawaban, dan status tayang</p>
+            <p class="mt-1 text-sm text-navy-600">Kelola pertanyaan, pilihan ganda, kunci jawaban, dan status tayang</p>
         </div>
         <div class="flex items-center gap-2">
-            <x-button :href="route('admin.questions.create')" variant="primary">+ Tambah Soal</x-button>
+            <x-button :href="route('admin.questions.create')" variant="primary"><x-icon name="plus" /> Tambah Soal</x-button>
         </div>
     </div>
 
     <!-- Filter & Search -->
     <x-card class="mb-6">
         <form method="GET" action="{{ route('admin.questions.index') }}" class="flex flex-wrap items-end gap-3">
-            <div class="min-w-60 flex-1">
-                <label for="search" class="mb-1 block text-xs font-semibold uppercase text-navy-600">Pencarian Teks Soal</label>
+            <div class="w-full sm:min-w-60 sm:flex-1">
+                <label for="search" class="field-label">Pencarian Teks Soal</label>
                 <input type="text" id="search" name="search" value="{{ request('search') }}"
                     placeholder="Ketik kata kunci soal..."
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-ungu-500 focus:outline-none focus:ring-2 focus:ring-ungu-100">
+                    class="field">
             </div>
 
-            <div class="w-44">
-                <label for="status" class="mb-1 block text-xs font-semibold uppercase text-navy-600">Status</label>
+            <div class="w-full sm:w-44">
+                <label for="status" class="field-label">Status</label>
                 <select id="status" name="status"
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-ungu-500 focus:outline-none focus:ring-2 focus:ring-ungu-100">
+                    class="field">
                     <option value="">Semua Status</option>
                     <option value="active" @selected(request('status') === 'active')>Aktif</option>
                     <option value="inactive" @selected(request('status') === 'inactive')>Nonaktif</option>
@@ -34,10 +34,10 @@
                 </select>
             </div>
 
-            <div class="w-52">
-                <label for="course_id" class="mb-1 block text-xs font-semibold uppercase text-navy-600">Mata Kuliah</label>
+            <div class="w-full sm:w-52">
+                <label for="course_id" class="field-label">Mata Kuliah</label>
                 <select id="course_id" name="course_id"
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-ungu-500 focus:outline-none focus:ring-2 focus:ring-ungu-100">
+                    class="field">
                     <option value="">Semua Mata Kuliah</option>
                     @foreach ($courses as $c)
                         <option value="{{ $c->id }}" @selected(request('course_id') == $c->id)>{{ $c->code }} - {{ $c->name }}</option>
@@ -45,10 +45,10 @@
                 </select>
             </div>
 
-            <div class="w-52">
-                <label for="material_id" class="mb-1 block text-xs font-semibold uppercase text-navy-600">Materi</label>
+            <div class="w-full sm:w-52">
+                <label for="material_id" class="field-label">Materi</label>
                 <select id="material_id" name="material_id"
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-ungu-500 focus:outline-none focus:ring-2 focus:ring-ungu-100">
+                    class="field">
                     <option value="">Semua Materi</option>
                     @foreach ($materials as $m)
                         <option value="{{ $m->id }}" @selected(request('material_id') == $m->id)>{{ $m->title }}</option>
@@ -68,20 +68,24 @@
     <!-- Table -->
     <x-card class="overflow-x-auto">
         <table class="w-full text-left text-sm">
-            <thead class="bg-navy-900 text-xs uppercase tracking-wide text-navy-100">
+            <thead class="bg-navy-900 text-xs uppercase tracking-wide text-navy-100 max-sm:hidden">
                 <tr>
                     <th class="px-4 py-3">Pertanyaan & Pilihan</th>
-                    <th class="px-4 py-3 w-48">Mata Kuliah & Materi</th>
-                    <th class="px-4 py-3 text-center w-24">Sumber</th>
-                    <th class="px-4 py-3 text-center w-28">Status</th>
+                    <th class="hidden px-4 py-3 w-48 md:table-cell">Mata Kuliah & Materi</th>
+                    <th class="hidden px-4 py-3 text-center w-24 md:table-cell">Sumber</th>
+                    <th class="hidden px-4 py-3 text-center w-28 sm:table-cell">Status</th>
                     <th class="px-4 py-3 text-right w-44">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-navy-50">
                 @forelse ($questions as $question)
-                    <tr class="hover:bg-slate-50 align-top">
-                        <td class="px-4 py-3">
+                    <tr class="align-top hover:bg-slate-50 max-sm:block max-sm:py-2">
+                        <td class="px-4 py-3 max-sm:block max-sm:px-0 max-sm:pb-2">
                             <p class="font-medium text-navy-900 leading-snug">{{ $question->question_text }}</p>
+                            <p class="mt-1 text-xs text-navy-600 md:hidden">
+                                {{ $question->material?->course?->code }} · {{ $question->material?->title }}
+                                <span class="sm:hidden">· {{ ['active' => 'Aktif', 'inactive' => 'Nonaktif', 'draft' => 'Draft'][$question->status] ?? $question->status }}</span>
+                            </p>
                             <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
                                 <span class="rounded px-2 py-1 {{ $question->correct_answer === 'a' ? 'bg-emerald-100 text-emerald-800 font-bold border border-emerald-300' : 'bg-slate-100 text-slate-700' }}">
                                     A. {{ $question->option_a }}
@@ -97,22 +101,22 @@
                                 </span>
                             </div>
                         </td>
-                        <td class="px-4 py-3">
-                            <span class="block font-mono text-xs font-semibold text-navy-600">
+                        <td class="hidden px-4 py-3 md:table-cell">
+                            <span class="block text-xs font-semibold text-navy-700">
                                 {{ $question->material?->course?->code }} - {{ $question->material?->course?->name }}
                             </span>
                             <span class="block text-xs text-slate-600 mt-0.5">
                                 {{ $question->material?->title }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-center">
+                        <td class="hidden px-4 py-3 text-center md:table-cell">
                             @if ($question->source === 'ai')
                                 <span class="inline-flex rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-800">AI</span>
                             @else
                                 <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">Manual</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-center">
+                        <td class="hidden px-4 py-3 text-center sm:table-cell">
                             @if ($question->status === 'active')
                                 <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">Aktif</span>
                             @elseif ($question->status === 'inactive')
@@ -121,14 +125,14 @@
                                 <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Draft</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-right">
-                            <div class="flex flex-col items-end gap-1.5">
+                        <td class="px-4 py-3 text-right max-sm:block max-sm:px-0 max-sm:pt-0">
+                            <div class="flex flex-col items-end gap-1.5 max-sm:flex-row max-sm:flex-wrap max-sm:items-center">
                                 <div class="inline-flex items-center gap-1.5">
                                     @if ($question->status === 'draft')
                                         <form method="POST" action="{{ route('admin.questions.approve', $question) }}">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="rounded border border-emerald-300 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100">
+                                            <button type="submit" class="act act-ok">
                                                 Approve
                                             </button>
                                         </form>
@@ -136,20 +140,20 @@
                                         <form method="POST" action="{{ route('admin.questions.toggle-status', $question) }}">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="rounded border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100">
+                                            <button type="submit" class="act">
                                                 {{ $question->status === 'active' ? 'Nonaktifkan' : 'Aktifkan' }}
                                             </button>
                                         </form>
                                     @endif
                                 </div>
                                 <div class="inline-flex items-center gap-1.5">
-                                    <a href="{{ route('admin.questions.edit', $question) }}" class="rounded border border-slate-200 px-2 py-1 text-xs font-medium text-navy-700 hover:bg-slate-100">
+                                    <a href="{{ route('admin.questions.edit', $question) }}" class="act">
                                         Edit
                                     </a>
                                     <form method="POST" action="{{ route('admin.questions.destroy', $question) }}" onsubmit="return confirm('Hapus soal ini?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="rounded border border-red-200 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50">
+                                        <button type="submit" class="act act-danger">
                                             Hapus
                                         </button>
                                     </form>

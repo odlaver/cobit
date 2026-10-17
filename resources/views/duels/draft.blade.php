@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Draft Room Ronde ' . $current_round)
+@section('width', 'max-w-5xl')
 
 @php
     $stepLabels = ['Ban 1', 'Ban 2', 'Pick 1', 'Pick 2'];
@@ -74,9 +75,9 @@
                     ])>
                         {{ $label }}
                         @if ($index < $step)
-                            <span class="mt-0.5 block text-[10px] font-semibold uppercase tracking-wide">selesai</span>
+                            <span class="mt-0.5 block text-xs font-medium opacity-90">selesai</span>
                         @elseif ($index === $step)
-                            <span class="mt-0.5 block text-[10px] font-semibold uppercase tracking-wide">sekarang</span>
+                            <span class="mt-0.5 block text-xs font-medium opacity-90">sekarang</span>
                         @endif
                     </li>
                 @endforeach

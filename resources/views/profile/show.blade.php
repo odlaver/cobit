@@ -1,9 +1,10 @@
 @extends('layouts.app')
 
 @section('title', 'Profil ' . $user->name)
+@section('width', 'max-w-2xl')
 
 @section('content')
-    <x-card class="mx-auto max-w-2xl">
+    <x-card>
         <div class="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
             <x-avatar :user="$user" size="lg" />
 

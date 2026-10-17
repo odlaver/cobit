@@ -3,6 +3,8 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChallengeController;
 use App\Http\Controllers\DraftController;
+use App\Http\Controllers\BattleController;
+use App\Http\Controllers\DuelController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\CourseController;
@@ -42,6 +44,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/challenges', [ChallengeController::class, 'index'])->name('challenges.index');
         Route::get('/challenges/lawan', [ChallengeController::class, 'opponents'])->name('challenges.opponents');
+        Route::get('/challenges/status', [ChallengeController::class, 'status'])->name('challenges.status');
         Route::post('/challenges', [ChallengeController::class, 'store'])->name('challenges.store');
         Route::post('/challenges/{challenge}/accept', [ChallengeController::class, 'accept'])->name('challenges.accept');
         Route::post('/challenges/{challenge}/decline', [ChallengeController::class, 'decline'])->name('challenges.decline');
@@ -50,6 +53,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/duels/{duel}/draft', [DraftController::class, 'show'])->name('duels.draft');
         Route::post('/duels/{duel}/draft', [DraftController::class, 'store'])->name('duels.draft.store');
         Route::get('/duels/{duel}/state', [DraftController::class, 'state'])->name('duels.state');
+        Route::get('/duels', [DuelController::class, 'index'])->name('duels.index');
+        Route::get('/duels/{duel}', [DuelController::class, 'show'])->name('duels.show');
+        Route::get('/duels/{duel}/result', [DuelController::class, 'result'])->name('duels.result');
+        Route::get('/duels/{duel}/battle', [BattleController::class, 'show'])->name('duels.battle');
+        Route::post('/duels/{duel}/battle', [BattleController::class, 'answer'])->name('duels.battle.answer');
+        Route::get('/duels/{duel}/battle/state', [BattleController::class, 'state'])->name('duels.battle.state');
     });
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {

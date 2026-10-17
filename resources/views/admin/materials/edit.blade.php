@@ -1,24 +1,25 @@
 @extends('layouts.app')
 
 @section('title', 'Edit Materi ' . $material->title)
+@section('width', 'max-w-2xl')
 
 @section('content')
     <div class="mb-6">
-        <a href="{{ route('admin.materials.index') }}" class="inline-flex items-center text-sm font-medium text-navy-600 hover:text-navy-900">
-            &larr; Kembali ke Daftar Materi
+        <a href="{{ route('admin.materials.index') }}" class="-ml-1 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-navy-600 hover:text-navy-900">
+            <x-icon name="back" /> Kembali ke Daftar Materi
         </a>
         <h1 class="mt-2 text-2xl font-bold text-navy-900">Edit Materi: {{ $material->title }}</h1>
     </div>
 
-    <x-card class="max-w-2xl">
+    <x-card>
         <form method="POST" action="{{ route('admin.materials.update', $material) }}" class="space-y-4">
             @csrf
             @method('PUT')
 
             <div>
-                <label for="course_id" class="mb-1.5 block text-sm font-semibold text-slate-700">Mata Kuliah</label>
+                <label for="course_id" class="field-label">Mata Kuliah</label>
                 <select id="course_id" name="course_id" required
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-ungu-500 focus:outline-none focus:ring-4 focus:ring-ungu-100">
+                    class="field py-2.5">
                     @foreach ($courses as $c)
                         <option value="{{ $c->id }}" @selected(old('course_id', $material->course_id) == $c->id)>
                             {{ $c->code }} - {{ $c->name }} (Sem {{ $c->semester }})
@@ -33,9 +34,9 @@
             <x-input name="title" label="Judul Materi" :value="old('title', $material->title)" required />
 
             <div>
-                <label for="description" class="mb-1.5 block text-sm font-semibold text-slate-700">Deskripsi Materi (Opsional)</label>
+                <label for="description" class="field-label">Deskripsi Materi (Opsional)</label>
                 <textarea id="description" name="description" rows="3"
-                    class="block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-ungu-500 focus:outline-none focus:ring-4 focus:ring-ungu-100">{{ old('description', $material->description) }}</textarea>
+                    class="field py-2.5">{{ old('description', $material->description) }}</textarea>
                 @error('description')
                     <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                 @enderror

@@ -16,7 +16,7 @@ class DashboardController extends Controller
             'userCount' => User::count(),
             'duelCount' => class_exists(Duel::class) ? Duel::count() : 0,
             'questionCount' => Question::count(),
-            'courses' => Course::withCount(['materials', 'questions'])
+            'courses' => Course::withCount(['materials', 'questions', 'questions as active_questions_count' => fn ($q) => $q->where('questions.status', Question::STATUS_ACTIVE)])
                 ->orderBy('name')->get(),
         ]);
     }

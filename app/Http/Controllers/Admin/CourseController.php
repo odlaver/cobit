@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\Question;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -11,7 +13,7 @@ class CourseController extends Controller
 {
     public function index(Request $request)
     {
-        $courses = Course::withCount(['materials', 'questions'])
+        $courses = Course::withCount(['materials', 'questions', 'questions as active_questions_count' => fn ($q) => $q->where('questions.status', Question::STATUS_ACTIVE)])
             ->when($request->filled('search'), fn ($q) => $q->where(fn ($q) => $q
                 ->where('name', 'ilike', '%'.$request->string('search').'%')
                 ->orWhere('code', 'ilike', '%'.$request->string('search').'%')))
@@ -64,7 +66,11 @@ class CourseController extends Controller
 
     public function destroy(Course $course)
     {
-        $course->delete();
+        try {
+            $course->delete();
+        } catch (QueryException) {
+            return back()->with('error', 'Matkul ini sudah dipakai di duel, jadi tidak bisa dihapus. Nonaktifkan saja.');
+        }
         return back()->with('success', 'Matkul berhasil dihapus.');
     }
 }

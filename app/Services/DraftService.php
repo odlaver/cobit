@@ -208,6 +208,10 @@ class DraftService
                 throw new DomainException('Bukan giliranmu untuk memilih.');
             }
 
+            if ($isAuto && $fresh->turn_deadline && now()->lt($fresh->turn_deadline)) {
+                throw new DomainException('Waktu giliran belum habis.');
+            }
+
             $action = $this->stepAction($step);
             $available = $this->availableCourses($fresh)->modelKeys();
 
