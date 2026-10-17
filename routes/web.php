@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChallengeController;
+use App\Http\Controllers\DraftController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\CourseController;
@@ -37,6 +39,17 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:mahasiswa')->group(function () {
         Route::view('/dashboard', 'dashboard')->name('dashboard');
+
+        Route::get('/challenges', [ChallengeController::class, 'index'])->name('challenges.index');
+        Route::get('/challenges/lawan', [ChallengeController::class, 'opponents'])->name('challenges.opponents');
+        Route::post('/challenges', [ChallengeController::class, 'store'])->name('challenges.store');
+        Route::post('/challenges/{challenge}/accept', [ChallengeController::class, 'accept'])->name('challenges.accept');
+        Route::post('/challenges/{challenge}/decline', [ChallengeController::class, 'decline'])->name('challenges.decline');
+        Route::post('/challenges/{challenge}/cancel', [ChallengeController::class, 'cancel'])->name('challenges.cancel');
+
+        Route::get('/duels/{duel}/draft', [DraftController::class, 'show'])->name('duels.draft');
+        Route::post('/duels/{duel}/draft', [DraftController::class, 'store'])->name('duels.draft.store');
+        Route::get('/duels/{duel}/state', [DraftController::class, 'state'])->name('duels.state');
     });
 
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
