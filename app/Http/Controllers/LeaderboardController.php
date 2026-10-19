@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Duel;
 use App\Models\User;
 use Illuminate\View\View;
 
@@ -14,6 +15,6 @@ class LeaderboardController extends Controller
             ->orderBy('name')
             ->paginate(20);
 
-        return view('leaderboard', compact('users'));
+        return view('leaderboard', ['users' => $users, 'busy' => Duel::busyPlayerIds()]);
     }
 }

@@ -3,11 +3,19 @@
 @section('title', '[' . $course->code . '] ' . $course->name)
 
 @section('content')
+    @php
+        $min = \App\Services\DraftService::MIN_QUESTIONS;
+        $active = $course->questions()->where('status', 'active')->count();
+        $eligible = $active >= $min && $course->is_active;
+    @endphp
+
     <div class="mb-6">
         <div class="flex flex-wrap items-center gap-2 text-sm font-medium text-navy-600">
-            <a href="{{ route('admin.dashboard') }}" class="hover:underline">Dashboard Admin</a>
-            <x-icon name="next" class="size-3.5 text-navy-400" />
-            <a href="{{ route('admin.courses.index') }}" class="hover:underline">Mata Kuliah</a>
+            @if (auth()->user()->isAdmin())
+                <a href="{{ route('admin.dashboard') }}" class="inline-flex min-h-11 items-center hover:underline">Dashboard Admin</a>
+                <x-icon name="next" class="size-3.5 text-navy-400" />
+            @endif
+            <a href="{{ route('admin.courses.index') }}" class="inline-flex min-h-11 items-center hover:underline">Mata Kuliah</a>
             <x-icon name="next" class="size-3.5 text-navy-400" />
             <span class="text-navy-800">{{ $course->code }}</span>
         </div>
@@ -18,7 +26,7 @@
                     <h1 class="text-2xl font-bold text-navy-900">{{ $course->name }}</h1>
                     <span class="font-mono text-sm font-bold text-navy-600 bg-navy-100 px-2 py-0.5 rounded">{{ $course->code }}</span>
                     @if (!$course->is_active)
-                        <span class="rounded bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">Nonaktif</span>
+                        <x-badge>Nonaktif</x-badge>
                     @endif
                 </div>
                 <p class="mt-1 text-sm text-navy-600">
@@ -37,6 +45,12 @@
                 <x-button :href="route('admin.questions.create', ['course_id' => $course->id])" variant="primary">
                     <x-icon name="plus" /> Tambah Soal
                 </x-button>
+                @if ($aiReady)
+                    <form method="POST" action="{{ route('admin.courses.generate', $course) }}">
+                        @csrf
+                        <x-button variant="secondary">Generate {{ count(\App\Jobs\GenerateCourseQuestions::MIX) }} soal AI</x-button>
+                    </form>
+                @endif
                 <x-button :href="route('admin.courses.edit', $course)" variant="ghost">
                     Edit Matkul
                 </x-button>
@@ -46,7 +60,7 @@
         <!-- Pool Status Bar -->
         <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-navy-100 bg-white p-4 shadow-xs">
             <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-lg {{ $course->questions()->where('status', 'active')->count() >= 10 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                <div class="flex h-10 w-10 items-center justify-center rounded-lg {{ $active >= $min ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -54,14 +68,14 @@
                 <div>
                     <h3 class="text-sm font-bold text-navy-900">
                         Status Pool Tournament:
-                        @if ($course->questions()->where('status', 'active')->count() >= 10 && $course->is_active)
+                        @if ($eligible)
                             <span class="text-emerald-700">Memenuhi Syarat (Siap Duel)</span>
                         @else
                             <span class="text-amber-700">Belum Siap Masuk Pool</span>
                         @endif
                     </h3>
                     <p class="text-xs text-navy-500">
-                        Terdapat {{ $course->questions()->where('status', 'active')->count() }} soal aktif dari syarat minimal 10 soal aktif.
+                        Terdapat {{ $active }} soal aktif dari syarat minimal {{ $min }} soal aktif.
                         Total materi: {{ $course->materials->count() }} materi.
                     </p>
                 </div>
@@ -86,9 +100,7 @@
                                 {{ $loop->iteration }}
                             </span>
                             <h3 class="text-base font-bold text-navy-900">{{ $material->title }}</h3>
-                            <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
-                                {{ $material->questions_count }} Soal
-                            </span>
+                            <x-badge>{{ $material->questions_count }} soal</x-badge>
                         </div>
                         @if ($material->description)
                             <p class="mt-1 text-xs text-slate-600 pl-8">{{ $material->description }}</p>
@@ -104,14 +116,16 @@
                             class="act">
                             Edit Materi
                         </a>
+                        @if (auth()->user()->isAdmin())
                         <form method="POST" action="{{ route('admin.materials.destroy', $material) }}"
-                            onsubmit="return confirm('Hapus materi {{ $material->title }} beserta seluruh soalnya?')">
+                            onsubmit="return confirm(@js('Hapus materi '.$material->title.' beserta seluruh soalnya?'))">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="act act-danger">
                                 Hapus
                             </button>
                         </form>
+                        @endif
                     </div>
                 </div>
 
@@ -159,14 +173,12 @@
 
                                         <!-- Status & Aksi Soal -->
                                         <div class="flex flex-row-reverse items-center justify-between gap-2 sm:flex-col sm:items-end">
-                                            <div>
-                                                @if ($question->status === 'active')
-                                                    <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">Aktif</span>
-                                                @elseif ($question->status === 'inactive')
-                                                    <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">Nonaktif</span>
-                                                @elseif ($question->status === 'draft')
-                                                    <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Draft</span>
+                                            <div class="flex flex-wrap items-center justify-end gap-1.5">
+                                                <x-difficulty :level="$question->difficulty" />
+                                                @if ($question->source === 'ai')
+                                                    <x-badge tone="info">AI</x-badge>
                                                 @endif
+                                                <x-question-status :status="$question->status" />
                                             </div>
 
                                             <div class="flex flex-wrap items-center gap-1.5">
@@ -192,6 +204,7 @@
                                                     Edit
                                                 </a>
 
+                                                @if (auth()->user()->isAdmin())
                                                 <form method="POST" action="{{ route('admin.questions.destroy', $question) }}" onsubmit="return confirm('Hapus soal ini?')">
                                                     @csrf
                                                     @method('DELETE')
@@ -199,6 +212,7 @@
                                                         Hapus
                                                     </button>
                                                 </form>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>

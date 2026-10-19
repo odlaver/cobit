@@ -34,6 +34,25 @@
                 </select>
             </div>
 
+            <div class="w-full sm:w-36">
+                <label for="difficulty" class="field-label">Kesulitan</label>
+                <select id="difficulty" name="difficulty" class="field">
+                    <option value="">Semua</option>
+                    @foreach (\App\Models\Question::DIFFICULTIES as $value => $label)
+                        <option value="{{ $value }}" @selected(request('difficulty') === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="w-full sm:w-36">
+                <label for="source" class="field-label">Sumber</label>
+                <select id="source" name="source" class="field">
+                    <option value="">Semua</option>
+                    <option value="manual" @selected(request('source') === 'manual')>Manual</option>
+                    <option value="ai" @selected(request('source') === 'ai')>AI</option>
+                </select>
+            </div>
+
             <div class="w-full sm:w-52">
                 <label for="course_id" class="field-label">Mata Kuliah</label>
                 <select id="course_id" name="course_id"
@@ -58,7 +77,7 @@
 
             <div class="flex items-center gap-2">
                 <x-button type="submit" variant="primary">Filter</x-button>
-                @if (request()->hasAny(['search', 'status', 'course_id', 'material_id']))
+                @if (request()->hasAny(['search', 'status', 'difficulty', 'source', 'course_id', 'material_id']))
                     <x-button :href="route('admin.questions.index')" variant="ghost">Reset</x-button>
                 @endif
             </div>
@@ -82,6 +101,12 @@
                     <tr class="align-top hover:bg-slate-50 max-sm:block max-sm:py-2">
                         <td class="px-4 py-3 max-sm:block max-sm:px-0 max-sm:pb-2">
                             <p class="font-medium text-navy-900 leading-snug">{{ $question->question_text }}</p>
+                            <div class="mt-1.5 flex flex-wrap gap-1.5">
+                                <x-difficulty :level="$question->difficulty" />
+                                @if ($question->source === 'ai')
+                                    <x-badge tone="info" class="md:hidden">AI</x-badge>
+                                @endif
+                            </div>
                             <p class="mt-1 text-xs text-navy-600 md:hidden">
                                 {{ $question->material?->course?->code }} · {{ $question->material?->title }}
                                 <span class="sm:hidden">· {{ ['active' => 'Aktif', 'inactive' => 'Nonaktif', 'draft' => 'Draft'][$question->status] ?? $question->status }}</span>
@@ -111,19 +136,13 @@
                         </td>
                         <td class="hidden px-4 py-3 text-center md:table-cell">
                             @if ($question->source === 'ai')
-                                <span class="inline-flex rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-semibold text-cyan-800">AI</span>
+                                <x-badge tone="info">AI</x-badge>
                             @else
-                                <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">Manual</span>
+                                <x-badge>Manual</x-badge>
                             @endif
                         </td>
                         <td class="hidden px-4 py-3 text-center sm:table-cell">
-                            @if ($question->status === 'active')
-                                <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">Aktif</span>
-                            @elseif ($question->status === 'inactive')
-                                <span class="inline-flex rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-semibold text-slate-700">Nonaktif</span>
-                            @elseif ($question->status === 'draft')
-                                <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">Draft</span>
-                            @endif
+                            <x-question-status :status="$question->status" />
                         </td>
                         <td class="px-4 py-3 text-right max-sm:block max-sm:px-0 max-sm:pt-0">
                             <div class="flex flex-col items-end gap-1.5 max-sm:flex-row max-sm:flex-wrap max-sm:items-center">
@@ -150,6 +169,7 @@
                                     <a href="{{ route('admin.questions.edit', $question) }}" class="act">
                                         Edit
                                     </a>
+                                    @if (auth()->user()->isAdmin())
                                     <form method="POST" action="{{ route('admin.questions.destroy', $question) }}" onsubmit="return confirm('Hapus soal ini?')">
                                         @csrf
                                         @method('DELETE')
@@ -157,6 +177,7 @@
                                             Hapus
                                         </button>
                                     </form>
+                                    @endif
                                 </div>
                             </div>
                         </td>

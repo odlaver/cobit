@@ -83,18 +83,21 @@ class ScoringService
     private function applyPoints(Duel $duel, ?int $winnerId): void
     {
         $players = User::whereIn('id', $duel->playerIds())->lockForUpdate()->get()->keyBy('id');
+        $loser = $winnerId === null ? null : $players->first(fn (User $user) => $user->id !== $winnerId);
+        $upset = $loser && $players[$winnerId]->tier === 'Noob' && $loser->tier === 'God';
 
-        if ($winnerId === null) {
-            $players->each(fn (User $user) => $user->forceFill(['points' => $user->points + self::DRAW_POINTS])->save());
+        // Poin kalah tidak di bawah nol
+        $deltas = $players->map(fn (User $user) => match (true) {
+            $winnerId === null => self::DRAW_POINTS,
+            $user->id === $winnerId => self::WIN_POINTS + ($upset ? self::UPSET_BONUS : 0),
+            default => -min(self::LOSS_POINTS, $user->points),
+        });
 
-            return;
-        }
+        $players->each(fn (User $user) => $user->forceFill(['points' => $user->points + $deltas[$user->id]])->save());
 
-        $winner = $players[$winnerId];
-        $loser = $players->first(fn (User $user) => $user->id !== $winnerId);
-        $upset = $winner->tier === 'Noob' && $loser->tier === 'God';
-
-        $winner->forceFill(['points' => $winner->points + self::WIN_POINTS + ($upset ? self::UPSET_BONUS : 0)])->save();
-        $loser->forceFill(['points' => max(0, $loser->points - self::LOSS_POINTS)])->save();
+        $duel->update([
+            'player1_delta' => $deltas[(int) $duel->player1_id],
+            'player2_delta' => $deltas[(int) $duel->player2_id],
+        ]);
     }
 }

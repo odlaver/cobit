@@ -11,27 +11,30 @@
         'ongoing' => ['Duel masih berjalan', 'bg-navy-700'],
     ][$outcome];
     $seconds = fn ($ms) => number_format($ms / 1000, 1, ',', '.') . ' dtk';
+    $signed = fn ($n) => $n > 0 ? '+' . $n : str_replace('-', '−', (string) $n);
 @endphp
 
 @section('content')
-    <div class="mx-auto max-w-4xl space-y-6">
+    <div class="mx-auto max-w-4xl space-y-6"
+        @if ($outcome !== 'ongoing') data-controller="result" data-result-duel-value="{{ $duel->id }}" data-result-outcome-value="{{ $outcome }}" @endif>
         <section class="overflow-hidden rounded-xl text-white {{ $headline[1] }}">
             <div class="px-6 pt-6 text-center sm:px-8">
                 <p class="text-sm text-white/80">
                     Duel #{{ $duel->id }}
                     @if ($duel->finished_at) · {{ $duel->finished_at->translatedFormat('j F Y, H.i') }} @endif
+                    @if ($room) · {{ $room->roomLabel() }} @endif
                 </p>
                 <h1 class="mt-1 text-3xl font-bold sm:text-4xl">{{ $headline[0] }}</h1>
             </div>
 
-            <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-6 sm:gap-6 sm:px-8">
+            <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-4 py-6 sm:gap-6 sm:px-8">
                 @foreach ([[$user, 'Kamu'], [$opponent, null]] as [$player, $tag])
                     @if ($loop->last)
                         <p class="order-2 text-4xl font-bold tabular-nums sm:text-6xl" aria-label="Skor ronde {{ $roundWins[0] }} lawan {{ $roundWins[1] }}">
-                            {{ $roundWins[0] }}<span class="px-2 text-white/50">:</span>{{ $roundWins[1] }}
+                            <span data-result-target="number" data-to="{{ $roundWins[0] }}">{{ $roundWins[0] }}</span><span class="px-2 text-white/50">:</span><span data-result-target="number" data-to="{{ $roundWins[1] }}">{{ $roundWins[1] }}</span>
                         </p>
                     @endif
-                    <div @class(['flex flex-col items-center gap-2 text-center', 'order-1' => $loop->first, 'order-3' => $loop->last])>
+                    <div @class(['flex min-w-0 flex-col items-center gap-2 text-center', 'order-1' => $loop->first, 'order-3' => $loop->last])>
                         <x-avatar :user="$player" class="ring-2 ring-white/40" />
                         <p class="max-w-full truncate text-sm font-semibold sm:text-base">{{ $tag ?? $player->name }}</p>
                         <x-tier-badge :points="$player->points" />
@@ -41,8 +44,13 @@
 
             @if ($outcome !== 'ongoing')
                 <p class="bg-black/15 px-6 py-3 text-center text-sm">
-                    Poinmu sekarang <strong>{{ $user->points }}</strong>.
-                    Menang +{{ \App\Services\ScoringService::WIN_POINTS }}, seri +{{ \App\Services\ScoringService::DRAW_POINTS }}, kalah −{{ \App\Services\ScoringService::LOSS_POINTS }}.
+                    @if ($delta !== null)
+                        <strong class="text-base tabular-nums" data-result-target="number" data-to="{{ $delta }}" data-sign="true">{{ $signed($delta) }}</strong> poin dari duel ini.
+                        Poinmu sekarang <strong class="tabular-nums">{{ $user->points }}</strong>.
+                    @else
+                        Poinmu sekarang <strong>{{ $user->points }}</strong>.
+                        Menang +{{ \App\Services\ScoringService::WIN_POINTS }}, seri +{{ \App\Services\ScoringService::DRAW_POINTS }}, kalah −{{ \App\Services\ScoringService::LOSS_POINTS }}.
+                    @endif
                 </p>
             @endif
         </section>
@@ -147,11 +155,20 @@
                     <x-button :href="route('duels.show', $duel)">Lanjutkan duel</x-button>
                 @endif
             @elseif ($canRematch)
+                {{-- Tantang ulang dengan room yang sama --}}
                 <form method="POST" action="{{ route('challenges.store') }}">
                     @csrf
                     <input type="hidden" name="opponent_id" value="{{ $opponent->id }}">
+                    <input type="hidden" name="rounds" value="{{ $room?->roundCount() ?? \App\Models\Duel::DEFAULT_ROUNDS }}">
+                    @if (! empty($room?->course_ids))
+                        <input type="hidden" name="mode" value="pilih">
+                        @foreach ($room->course_ids as $courseId)
+                            <input type="hidden" name="course_ids[]" value="{{ $courseId }}">
+                        @endforeach
+                    @endif
                     <x-button>Tantang {{ $opponent->name }} lagi</x-button>
                 </form>
+                <x-button variant="secondary" :href="route('challenges.room', ['opponent' => $opponent->id, 'from' => $duel->id])">Ubah room</x-button>
             @endif
             <x-button variant="secondary" :href="route('duels.index')">Riwayat duel</x-button>
             <x-button variant="ghost" :href="route('dashboard')">Dashboard</x-button>

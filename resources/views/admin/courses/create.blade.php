@@ -45,12 +45,12 @@
                 @enderror
             </div>
 
-            <div class="flex items-center gap-2 pt-2">
+            <label for="is_active" class="flex min-h-11 cursor-pointer items-center gap-2 pt-2 text-sm font-semibold text-navy-800">
                 <input type="checkbox" id="is_active" name="is_active" value="1"
                     @checked(old('is_active', true))
                     class="h-4 w-4 rounded border-slate-300 text-ungu-600 focus:ring-ungu-500">
-                <label for="is_active" class="text-sm font-semibold text-navy-800">Status Aktif (dapat digunakan dalam pool duel)</label>
-            </div>
+                Status Aktif (dapat digunakan dalam pool duel)
+            </label>
 
             <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <x-button :href="route('admin.courses.index')" variant="secondary">Batal</x-button>

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\RefreshDuelQuestions;
 use App\Models\Duel;
 use App\Models\DuelAnswer;
 use App\Models\DuelDraft;
@@ -17,12 +18,12 @@ use Illuminate\Support\Facades\DB;
 class BattleService
 {
     public const SECONDS = 20;
-    public const PER_COURSE = 5;
-    public const MAX_ROUNDS = 3;
+    public const QUESTIONS_PER_ROUND = 10;
+    public const READY_SECONDS = 3;
     private const GRACE_SECONDS = 3;
     private const ROUND_BUFFER_SECONDS = 60;
 
-    public function __construct(private ScoringService $scoring)
+    public function __construct(private ScoringService $scoring, private DraftService $draft)
     {
     }
 
@@ -51,6 +52,12 @@ class BattleService
     public function currentRound(Duel $duel): ?DuelRound
     {
         return $duel->rounds()->where('round_number', $duel->current_round)->first();
+    }
+
+    // Hitung mundur ronde sudah lewat
+    public function isReady(DuelRound $round): bool
+    {
+        return $round->starts_at === null || now()->gte($round->starts_at);
     }
 
     public function nextQuestion(DuelRound $round, int $userId): ?DuelRoundQuestion
@@ -155,8 +162,9 @@ class BattleService
     {
         $topWins = $duel->rounds()->whereNotNull('winner_id')->pluck('winner_id')->countBy()->max() ?? 0;
 
-        if ($topWins >= 2 || $duel->current_round >= self::MAX_ROUNDS) {
+        if ($topWins >= $duel->winsNeeded() || $duel->current_round >= ($duel->max_rounds ?: Duel::DEFAULT_ROUNDS)) {
             $this->scoring->finishDuel($duel);
+            RefreshDuelQuestions::dispatch($duel->id)->afterCommit();
 
             return;
         }
@@ -168,6 +176,8 @@ class BattleService
             'draft_step' => 0,
             'turn_deadline' => null,
         ]);
+
+        $this->draft->startRound($duel);
     }
 
     // Batas ronde untuk pemain yang kabur
@@ -190,14 +200,22 @@ class BattleService
             throw new DomainException('Draft ronde ini belum selesai.');
         }
 
+        // Soal ronde sebelumnya dipakai paling akhir
+        $used = DuelRoundQuestion::query()
+            ->whereHas('round', fn (Builder $query) => $query->where('duel_id', $round->duel_id))
+            ->pluck('question_id');
+
+        $perCourse = intdiv(self::QUESTIONS_PER_ROUND, $courseIds->count());
         $picked = collect();
 
         foreach ($courseIds as $courseId) {
-            $picked = $picked->merge($this->randomQuestions([$courseId], self::PER_COURSE, $picked));
+            $fresh = $this->randomQuestions([$courseId], $perCourse, $picked->merge($used));
+            $repeat = $this->randomQuestions([$courseId], $perCourse - $fresh->count(), $picked->merge($fresh));
+            $picked = $picked->merge($fresh)->merge($repeat);
         }
 
         // Tambal kalau stok soal kurang
-        $target = self::PER_COURSE * $courseIds->count();
+        $target = $perCourse * $courseIds->count();
         if ($picked->count() < $target) {
             $picked = $picked->merge($this->randomQuestions($courseIds->all(), $target - $picked->count(), $picked));
         }
@@ -214,6 +232,10 @@ class BattleService
 
     private function randomQuestions(array $courseIds, int $limit, Collection $except): Collection
     {
+        if ($limit <= 0) {
+            return collect();
+        }
+
         return Question::query()
             ->where('status', Question::STATUS_ACTIVE)
             ->whereHas('material', fn (Builder $query) => $query->whereIn('course_id', $courseIds))

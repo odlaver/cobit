@@ -7,7 +7,6 @@ use App\Models\Course;
 use App\Models\Duel;
 use App\Models\DuelDraft;
 use App\Models\DuelRound;
-use App\Models\Question;
 use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -20,11 +19,12 @@ class DraftService
     public const BAN_PER_ROUND = 2;
     public const PICK_PER_ROUND = 2;
     public const STEPS = self::BAN_PER_ROUND + self::PICK_PER_ROUND;
-    public const MAX_ROUNDS = 3;
+
+    private array $plans = [];
 
     public function createDuel(Challenge $challenge): Duel
     {
-        $pool = $this->drawPool();
+        $pool = $this->drawPool($challenge->course_ids);
 
         return DB::transaction(function () use ($challenge, $pool) {
             $first = (int) $challenge->challenger_id;
@@ -41,6 +41,7 @@ class DraftService
                 'pool' => $pool->all(),
                 'status' => Duel::STATUS_DRAFTING,
                 'current_round' => 1,
+                'max_rounds' => $challenge->roundCount(),
                 'draft_step' => 0,
                 'turn_deadline' => now()->addSeconds(self::SECONDS),
             ]);
@@ -52,8 +53,20 @@ class DraftService
                 'status' => DuelRound::STATUS_DRAFTING,
             ]);
 
+            $this->startRound($duel);
+
             return $duel;
         });
+    }
+
+    // Mulai ronde, isi pick yang sudah pasti
+    public function startRound(Duel $duel): void
+    {
+        $round = $this->ensureRound($duel);
+
+        if ($round) {
+            $this->fillForced($duel, $round);
+        }
     }
 
     public function ensureRound(Duel $duel): ?DuelRound
@@ -75,32 +88,56 @@ class DraftService
             ])->save();
         }
 
-        if ((int) $duel->draft_step < self::STEPS && $duel->turn_deadline === null) {
+        if ((int) $duel->draft_step < $this->steps($duel) && $duel->turn_deadline === null) {
             $duel->forceFill(['turn_deadline' => now()->addSeconds(self::SECONDS)])->save();
         }
 
         return $round;
     }
 
+    // Jumlah ban dan pick menyesuaikan sisa matkul
+    public function roundPlan(Duel $duel, ?int $roundNumber = null): array
+    {
+        $roundNumber ??= (int) $duel->current_round;
+
+        return $this->plans[$duel->id.':'.$roundNumber] ??= $this->buildPlan($duel, $roundNumber);
+    }
+
+    public function steps(Duel $duel): int
+    {
+        return $this->roundPlan($duel)['steps'];
+    }
+
     public function orderForRound(DuelRound $round): array
     {
         $first = (int) $round->first_ban_user_id;
         $duel = $round->duel;
-        $second = (int) ($duel->player1_id === $first ? $duel->player2_id : $duel->player1_id);
+        $second = (int) ((int) $duel->player1_id === $first ? $duel->player2_id : $duel->player1_id);
 
-        return [$first, $second, $second, $first];
+        // Pick pertama milik yang ban kedua
+        return match ($this->roundPlan($duel, $round->round_number)['steps']) {
+            4 => [$first, $second, $second, $first],
+            3 => [$first, $second, $first],
+            2 => [$second, $first],
+            default => [$first],
+        };
     }
 
-    public function stepAction(int $step): string
+    public function stepAction(int $step, int $bans = self::BAN_PER_ROUND): string
     {
-        return $step < self::BAN_PER_ROUND ? DuelDraft::ACTION_BAN : DuelDraft::ACTION_PICK;
+        return $step < $bans ? DuelDraft::ACTION_BAN : DuelDraft::ACTION_PICK;
+    }
+
+    public function actionAt(Duel $duel, int $step): string
+    {
+        return $this->stepAction($step, $this->roundPlan($duel)['bans']);
     }
 
     public function turnUserId(Duel $duel, DuelRound $round): ?int
     {
         $step = (int) $duel->draft_step;
 
-        if ($step >= self::STEPS) {
+        if ($step >= $this->steps($duel)) {
             return null;
         }
 
@@ -109,17 +146,11 @@ class DraftService
 
     public function availableCourses(Duel $duel): Collection
     {
-        $pool = $this->poolIds($duel);
+        $candidates = $this->roundPlan($duel)['candidates'];
 
-        if ($pool->isEmpty()) {
+        if ($candidates === []) {
             return Course::query()->whereRaw('1 = 0')->get();
         }
-
-        $pickedEarlier = DuelDraft::query()
-            ->where('duel_id', $duel->id)
-            ->where('round_number', '<', $duel->current_round)
-            ->where('action', DuelDraft::ACTION_PICK)
-            ->pluck('course_id');
 
         $usedNow = DuelDraft::query()
             ->where('duel_id', $duel->id)
@@ -127,8 +158,7 @@ class DraftService
             ->pluck('course_id');
 
         return Course::query()
-            ->whereIn('id', $pool)
-            ->whereNotIn('id', $pickedEarlier)
+            ->whereIn('id', $candidates)
             ->whereNotIn('id', $usedNow)
             ->orderBy('semester')
             ->orderBy('name')
@@ -200,7 +230,7 @@ class DraftService
 
             $step = (int) $fresh->draft_step;
 
-            if ($step >= self::STEPS) {
+            if ($step >= $this->steps($fresh)) {
                 throw new DomainException('Draft ronde ini selesai.');
             }
 
@@ -212,7 +242,7 @@ class DraftService
                 throw new DomainException('Waktu giliran belum habis.');
             }
 
-            $action = $this->stepAction($step);
+            $action = $this->actionAt($fresh, $step);
             $available = $this->availableCourses($fresh)->modelKeys();
 
             if ($courseId === null) {
@@ -228,25 +258,8 @@ class DraftService
                 );
             }
 
-            $draft = DuelDraft::create([
-                'duel_id' => $fresh->id,
-                'round_number' => $fresh->current_round,
-                'step' => $step,
-                'user_id' => $userId,
-                'course_id' => $courseId,
-                'action' => $action,
-                'is_auto' => $isAuto,
-            ]);
-
-            $nextStep = $step + 1;
-            $finished = $nextStep >= self::STEPS;
-
-            $fresh->forceFill([
-                'draft_step' => $nextStep,
-                'turn_deadline' => $finished ? null : now()->addSeconds(self::SECONDS),
-                'status' => $finished ? Duel::STATUS_BATTLE : Duel::STATUS_DRAFTING,
-                'started_at' => $finished ? ($fresh->started_at ?? now()) : $fresh->started_at,
-            ])->save();
+            $draft = $this->record($fresh, $round, (int) $courseId, $isAuto ? DuelDraft::REASON_TIMEOUT : null);
+            $this->fillForced($fresh, $round);
 
             return $draft;
         });
@@ -263,7 +276,7 @@ class DraftService
 
             $round = $this->ensureRound($fresh);
 
-            if (! $round || (int) $fresh->draft_step >= self::STEPS) {
+            if (! $round || (int) $fresh->draft_step >= $this->steps($fresh)) {
                 return;
             }
 
@@ -290,11 +303,104 @@ class DraftService
         }
     }
 
-    protected function drawPool(): Collection
+    // Simpan langkah lalu majukan giliran
+    private function record(Duel $duel, DuelRound $round, int $courseId, ?string $autoReason = null): DuelDraft
     {
+        $step = (int) $duel->draft_step;
+
+        $draft = DuelDraft::create([
+            'duel_id' => $duel->id,
+            'round_number' => $duel->current_round,
+            'step' => $step,
+            'user_id' => $this->turnUserId($duel, $round),
+            'course_id' => $courseId,
+            'action' => $this->actionAt($duel, $step),
+            'is_auto' => $autoReason !== null,
+            'auto_reason' => $autoReason,
+        ]);
+
+        $finished = $step + 1 >= $this->steps($duel);
+
+        $duel->forceFill([
+            'draft_step' => $step + 1,
+            'turn_deadline' => $finished ? null : now()->addSeconds(self::SECONDS),
+            'status' => $finished ? Duel::STATUS_BATTLE : Duel::STATUS_DRAFTING,
+            'started_at' => $finished ? ($duel->started_at ?? now()) : $duel->started_at,
+        ])->save();
+
+        // Hitung mundur sebelum soal pertama
+        if ($finished) {
+            $round->forceFill(['starts_at' => now()->addSeconds(BattleService::READY_SECONDS)])->save();
+        }
+
+        return $draft;
+    }
+
+    // Sisa pick tanpa pilihan diisi otomatis
+    private function fillForced(Duel $duel, DuelRound $round): void
+    {
+        $plan = $this->roundPlan($duel);
+
+        while ($duel->status === Duel::STATUS_DRAFTING && (int) $duel->draft_step < $plan['steps']) {
+            $step = (int) $duel->draft_step;
+            $available = $this->availableCourses($duel)->modelKeys();
+
+            if ($this->stepAction($step, $plan['bans']) !== DuelDraft::ACTION_PICK || count($available) > $plan['steps'] - $step) {
+                return;
+            }
+
+            $this->record($duel, $round, (int) $available[0], DuelDraft::REASON_FORCED);
+        }
+    }
+
+    private function buildPlan(Duel $duel, int $roundNumber): array
+    {
+        $pool = $this->poolIds($duel);
+
+        $pickedEarlier = DuelDraft::query()
+            ->where('duel_id', $duel->id)
+            ->where('round_number', '<', $roundNumber)
+            ->where('action', DuelDraft::ACTION_PICK)
+            ->pluck('course_id')
+            ->map(fn ($id) => (int) $id);
+
+        $candidates = $pool->diff($pickedEarlier)->values();
+
+        // Stok habis, pool dipakai ulang
+        if ($candidates->count() < min(self::PICK_PER_ROUND, $pool->count())) {
+            $candidates = $pool;
+        }
+
+        $picks = min(self::PICK_PER_ROUND, $candidates->count());
+        $bans = max(0, min(self::BAN_PER_ROUND, $candidates->count() - $picks));
+
+        return [
+            'candidates' => $candidates->all(),
+            'bans' => $bans,
+            'picks' => $picks,
+            'steps' => $bans + $picks,
+        ];
+    }
+
+    protected function drawPool(?array $courseIds = null): Collection
+    {
+        if (! empty($courseIds)) {
+            $room = Course::query()
+                ->eligible()
+                ->whereIn('id', $courseIds)
+                ->inRandomOrder()
+                ->limit(self::POOL_SIZE)
+                ->pluck('id');
+
+            if ($room->isEmpty()) {
+                throw new DomainException('Matkul di room ini belum punya cukup soal aktif. Minta lawanmu mengatur ulang room-nya.');
+            }
+
+            return $room->values();
+        }
+
         $eligible = Course::query()
-            ->where('is_active', true)
-            ->whereHas('questions', fn ($query) => $query->where('status', Question::STATUS_ACTIVE), '>=', self::MIN_QUESTIONS)
+            ->eligible()
             ->inRandomOrder()
             ->limit(self::POOL_SIZE)
             ->pluck('id');

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\GenerateCourseQuestions;
 use App\Models\Course;
 use App\Models\Question;
+use App\Services\QuestionGenerator;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -31,7 +33,25 @@ class CourseController extends Controller
             'materials' => fn ($q) => $q->withCount('questions')->with(['questions' => fn ($q2) => $q2->latest()]),
         ]);
 
-        return view('admin.courses.show', compact('course'));
+        return view('admin.courses.show', [
+            'course' => $course,
+            'aiReady' => app(QuestionGenerator::class)->enabled(),
+        ]);
+    }
+
+    public function generate(Course $course, QuestionGenerator $generator)
+    {
+        if (! $generator->enabled()) {
+            return back()->with('error', 'Generator soal belum aktif. Isi GROQ_API_KEY di file .env, lalu jalankan php artisan queue:work.');
+        }
+
+        if ($course->materials()->doesntExist()) {
+            return back()->with('error', 'Tambahkan minimal satu materi dulu supaya soal dibuat sesuai topik.');
+        }
+
+        GenerateCourseQuestions::dispatch($course->id);
+
+        return back()->with('success', "10 soal AI untuk {$course->name} sedang dibuat. Muat ulang halaman ini sekitar satu menit lagi.");
     }
 
     public function store(Request $request)

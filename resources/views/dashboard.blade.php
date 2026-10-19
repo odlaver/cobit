@@ -14,13 +14,18 @@
         </div>
     </div>
 
+    {{-- Dimuat ulang saat daftar online berubah --}}
+    <section class="mb-8" data-controller="presence" data-presence-frame-value="online-now">
+        <turbo-frame id="online-now" target="_top" data-src="{{ route('online') }}">
+            <x-online-now :user="auth()->user()" />
+        </turbo-frame>
+    </section>
+
     <section>
-        <div class="mb-3 flex items-baseline justify-between gap-4">
+        <div class="mb-2 flex items-center justify-between gap-4">
             <h2 class="text-lg font-bold">Statistik duel</h2>
-            <a href="{{ route('duels.index') }}" class="text-sm font-semibold text-ungu-600 underline-offset-2 hover:underline">Riwayat duel</a>
+            <a href="{{ route('duels.index') }}" class="inline-flex min-h-11 items-center text-sm font-semibold text-ungu-600 underline-offset-2 hover:underline">Riwayat duel</a>
         </div>
         <x-duel-stats :user="auth()->user()" />
     </section>
-
-    @include('challenges.partials.watch')
 @endsection

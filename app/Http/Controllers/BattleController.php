@@ -60,6 +60,14 @@ class BattleController extends Controller
                 ->pluck('course.name'),
         ];
 
+        // Soal belum disajikan selama hitung mundur
+        if (! $this->battle->isReady($round)) {
+            return view('duels.ready', $data + [
+                'startsIn' => max(0, now()->diffInMilliseconds($round->starts_at) / 1000),
+                'lastRound' => $duel->rounds()->where('round_number', $round->round_number - 1)->first(),
+            ]);
+        }
+
         $next = $this->battle->nextQuestion($round, $user->id);
 
         if (! $next) {

@@ -17,6 +17,8 @@ class QuestionController extends Controller
         $questions = Question::with('material.course')
             ->when($request->filled('search'), fn ($q) => $q->where('question_text', 'ilike', '%'.$request->string('search').'%'))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('difficulty'), fn ($q) => $q->where('difficulty', $request->string('difficulty')))
+            ->when($request->filled('source'), fn ($q) => $q->where('source', $request->string('source')))
             ->when($request->filled('material_id'), fn ($q) => $q->where('material_id', $request->integer('material_id')))
             ->when($request->filled('course_id'), fn ($q) => $q->whereHas('material', fn ($m) => $m->where('course_id', $request->integer('course_id'))))
             ->latest()->paginate(15)->withQueryString();
@@ -89,7 +91,7 @@ class QuestionController extends Controller
         $data = $request->validate([
             'material_id' => ['required', 'exists:materials,id'], 'question_text' => ['required', 'string'],
             'option_a' => ['required', 'string'], 'option_b' => ['required', 'string'], 'option_c' => ['required', 'string'], 'option_d' => ['required', 'string'],
-            'correct_answer' => ['required', Rule::in(Question::ANSWERS)], 'status' => ['required', Rule::in(Question::STATUSES)], 'source' => ['nullable', Rule::in(Question::SOURCES)],
+            'correct_answer' => ['required', Rule::in(Question::ANSWERS)], 'difficulty' => ['required', Rule::in(array_keys(Question::DIFFICULTIES))], 'status' => ['required', Rule::in(Question::STATUSES)], 'source' => ['nullable', Rule::in(Question::SOURCES)],
         ]);
         $data['source'] = $data['source'] ?? 'manual';
         return $data;

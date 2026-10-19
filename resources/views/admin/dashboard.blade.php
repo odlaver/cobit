@@ -13,7 +13,10 @@
         </div>
     </div>
 
-    @php $ready = $courses->filter(fn ($c) => $c->active_questions_count >= 10 && $c->is_active)->count(); @endphp
+    @php
+        $min = \App\Services\DraftService::MIN_QUESTIONS;
+        $ready = $courses->filter(fn ($c) => $c->active_questions_count >= $min && $c->is_active)->count();
+    @endphp
 
     <!-- Statistik -->
     <dl class="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -38,10 +41,10 @@
     <!-- Tabel Soal per Matkul -->
     <x-card title="Mata Kuliah & Distribusi Soal">
         <p class="-mt-2 mb-4 text-sm text-navy-600">
-            Matkul masuk pool duel kalau aktif dan punya minimal 10 soal aktif. Buka nama matkul untuk kelola materi dan soalnya.
+            Matkul masuk pool duel kalau aktif dan punya minimal {{ $min }} soal aktif. Buka nama matkul untuk kelola materi dan soalnya.
         </p>
 
-        <div class="overflow-visible">
+        <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
                 <thead class="bg-navy-900 text-xs uppercase tracking-wide text-navy-100">
                     <tr>
@@ -63,10 +66,10 @@
                                     {{ $course->name }}
                                 </a>
                                 @if (!$course->is_active)
-                                    <span class="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-semibold text-red-700">Nonaktif</span>
+                                    <x-badge class="ml-2">Nonaktif</x-badge>
                                 @endif
-                                <span @class(['mt-0.5 block text-xs font-semibold sm:hidden', 'text-emerald-700' => $course->active_questions_count >= 10 && $course->is_active, 'text-amber-700' => ! ($course->active_questions_count >= 10 && $course->is_active)])>
-                                    {{ $course->active_questions_count >= 10 && $course->is_active ? 'Siap pool' : 'Belum siap pool' }} · {{ $course->active_questions_count }} soal aktif
+                                <span @class(['mt-0.5 block text-xs font-semibold sm:hidden', 'text-emerald-700' => $course->active_questions_count >= $min && $course->is_active, 'text-amber-700' => ! ($course->active_questions_count >= $min && $course->is_active)])>
+                                    {{ $course->active_questions_count >= $min && $course->is_active ? 'Siap pool' : 'Belum siap pool' }} · {{ $course->active_questions_count }} soal aktif
                                 </span>
                             </td>
                             <td class="hidden px-4 py-3 text-center text-navy-700 md:table-cell">Sem {{ $course->semester }}</td>
@@ -75,25 +78,23 @@
                                     {{ $course->materials_count }} Materi
                                 </a>
                             </td>
-                            <td class="hidden px-4 py-3 text-center font-bold md:table-cell {{ $course->active_questions_count >= 10 ? 'text-ungu-600' : 'text-amber-600' }}">
+                            <td class="hidden px-4 py-3 text-center font-bold md:table-cell {{ $course->active_questions_count >= $min ? 'text-ungu-600' : 'text-amber-600' }}">
                                 <a href="{{ route('admin.courses.show', $course) }}" class="hover:underline">
                                     {{ $course->active_questions_count }}<span class="font-normal text-navy-500">/{{ $course->questions_count }}</span>
                                 </a>
                             </td>
                             <td class="hidden px-4 py-3 text-center sm:table-cell">
-                                @if ($course->active_questions_count >= 10 && $course->is_active)
-                                    <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-                                        Siap Pool
-                                    </span>
+                                @if ($course->active_questions_count >= $min && $course->is_active)
+                                    <x-badge tone="success">Siap pool</x-badge>
                                 @else
-                                    <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
-                                        {{ $course->active_questions_count < 10 ? 'Kurang ' . (10 - $course->active_questions_count) . ' soal aktif' : 'Nonaktif' }}
-                                    </span>
+                                    <x-badge :tone="$course->is_active ? 'warning' : 'neutral'">
+                                        {{ $course->active_questions_count < $min ? 'Kurang ' . ($min - $course->active_questions_count) . ' soal aktif' : 'Nonaktif' }}
+                                    </x-badge>
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <div class="relative inline-block text-left">
-                                    <button type="button" data-dropdown-toggle="dropdown-course-{{ $course->id }}" aria-haspopup="true" aria-expanded="false"
+                                <div class="relative inline-block text-left" data-controller="dropdown">
+                                    <button type="button" popovertarget="dropdown-course-{{ $course->id }}" data-dropdown-target="button" aria-haspopup="menu" aria-expanded="false"
                                         class="act gap-1.5">
                                         <span>Pilihan</span>
                                         <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -102,8 +103,8 @@
                                     </button>
 
                                     <!-- Dropdown Menu -->
-                                    <div id="dropdown-course-{{ $course->id }}" data-dropdown-menu
-                                        class="hidden absolute right-0 z-50 mt-1.5 w-48 rounded-lg border border-slate-200 bg-white py-1.5 shadow-lg ring-1 ring-black/5 focus:outline-none">
+                                    <div id="dropdown-course-{{ $course->id }}" popover data-dropdown-target="menu"
+                                        class="fixed inset-auto m-0 w-48 rounded-lg border border-slate-200 bg-white px-0 py-1.5 text-left shadow-lg ring-1 ring-black/5">
                                         <div class="px-3 py-1.5 border-b border-slate-100 text-xs font-bold text-navy-800">
                                             {{ $course->code }} &bull; Sem {{ $course->semester }}
                                         </div>
@@ -137,8 +138,9 @@
                                             </svg>
                                             Edit Matkul
                                         </a>
+                                        @if (auth()->user()->isAdmin())
                                         <form method="POST" action="{{ route('admin.courses.destroy', $course) }}"
-                                            onsubmit="return confirm('Hapus matkul {{ $course->name }} beserta materi dan soalnya?')">
+                                            onsubmit="return confirm(@js('Hapus matkul '.$course->name.' beserta materi dan soalnya?'))">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"
@@ -149,6 +151,7 @@
                                                 Hapus Matkul
                                             </button>
                                         </form>
+                                        @endif
                                     </div>
                                 </div>
                             </td>

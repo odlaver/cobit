@@ -5,36 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@hasSection('title')@yield('title') · @endif{{ config('app.name') }}</title>
+    <meta name="turbo-prefetch" content="false">
+    <meta name="turbo-cache-control" content="no-cache">
+    @stack('head')
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen bg-slate-100 font-sans text-navy-900 antialiased">
+<body class="min-h-screen bg-slate-100 font-sans text-navy-900 antialiased"
+    @unless (config('cobit.turbo')) data-turbo="false" @endunless
+    @hasSection('game') data-game="true" @endif
+    @auth
+        data-role="{{ auth()->user()->role }}"
+        data-user-id="{{ auth()->id() }}"
+        data-presence-url="{{ route('presence') }}"
+        @if (auth()->user()->isMahasiswa()) data-status-url="{{ route('challenges.status') }}" @endif
+        @isset($lockedDuel) data-duel="{{ $lockedDuel->id }}" @endisset
+    @endauth>
     @auth
         @php
-            $menu = auth()->user()->isAdmin()
-                ? [
+            $menu = match (auth()->user()->role) {
+                \App\Models\User::ROLE_ADMIN => [
                     ['admin.dashboard', 'Dashboard', 'admin.dashboard'],
                     ['admin.courses.index', 'Mata Kuliah', 'admin.courses.*|admin.materials.*|admin.questions.*'],
-                ]
-                : [
+                    ['admin.users.index', 'Pengguna', 'admin.users.*'],
+                ],
+                \App\Models\User::ROLE_ASDOS => [
+                    ['admin.courses.index', 'Mata Kuliah', 'admin.courses.*|admin.materials.*'],
+                    ['admin.questions.index', 'Bank Soal', 'admin.questions.*'],
+                ],
+                default => [
                     ['dashboard', 'Dashboard', 'dashboard'],
                     ['challenges.index', 'Tantangan', 'challenges.*'],
                     ['duels.index', 'Riwayat', 'duels.*'],
-                ];
+                ],
+            };
             $menu[] = ['leaderboard', 'Leaderboard', 'leaderboard'];
+            $inbox = auth()->user()->isMahasiswa()
+                ? \App\Models\Challenge::query()->pending()->where('opponent_id', auth()->id())->count()
+                : 0;
         @endphp
 
         <nav class="bg-navy-900 text-white" aria-label="Menu utama">
-            <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 px-4 sm:h-16 sm:flex-nowrap sm:gap-x-8">
+            <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 px-4 lg:h-16 lg:flex-nowrap lg:gap-x-8">
                 <a href="{{ route('home') }}" class="flex min-h-14 items-center text-lg font-extrabold tracking-tight">
                     CO<span class="text-cyan-400">BIT</span>
                 </a>
 
                 {{-- Baris kedua penuh di HP --}}
-                <div class="order-last -mx-4 grid w-[calc(100%+2rem)] grid-flow-col auto-cols-[minmax(0,1fr)] border-t border-white/10 text-sm font-semibold sm:order-none sm:mx-0 sm:flex sm:h-full sm:w-auto sm:gap-6 sm:border-0">
+                <div class="order-last -mx-4 grid w-[calc(100%+2rem)] grid-flow-col auto-cols-[minmax(0,1fr)] border-t border-white/10 text-sm font-semibold lg:order-none lg:mx-0 lg:flex lg:h-full lg:w-auto lg:gap-6 lg:border-0">
                     @isset($lockedDuel)
                         <a href="{{ route('duels.show', $lockedDuel) }}" aria-current="page"
-                            class="relative flex min-h-11 items-center justify-center gap-2 px-4 text-white after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-cyan-400 sm:h-full sm:justify-start sm:px-0 sm:after:inset-x-0">
+                            class="relative flex min-h-11 items-center justify-center gap-2 px-4 text-white after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-cyan-400 lg:h-full lg:justify-start lg:px-0 lg:after:inset-x-0">
                             <span class="size-2 rounded-full bg-cyan-400" aria-hidden="true"></span>
                             Duel sedang berjalan, menu lain dikunci
                         </a>
@@ -43,23 +64,38 @@
                         @php $current = request()->routeIs(...explode('|', $pattern)); @endphp
                         <a href="{{ route($route) }}" @if ($current) aria-current="page" @endif
                             @class([
-                                'relative flex min-h-11 items-center justify-center px-1 transition-colors max-[359px]:text-xs sm:h-full sm:px-0',
-                                'after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-cyan-400 sm:after:inset-x-0',
+                                'relative flex min-h-11 items-center justify-center px-1 transition-colors max-[359px]:text-xs lg:h-full lg:px-0',
+                                'after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-cyan-400 lg:after:inset-x-0',
+                                'pr-3.5 lg:pr-0' => $route === 'challenges.index',
                                 'text-white' => $current,
                                 'text-navy-200 after:hidden hover:text-white' => ! $current,
-                            ])>{{ $text }}</a>
+                            ])>
+                            {{ $text }}
+                            @if ($route === 'challenges.index')
+                                {{-- Jumlah tantangan masuk, diperbarui notifier --}}
+                                <span data-inbox-badge @if ($inbox === 0) hidden @endif
+                                    class="absolute top-1.5 right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan-400 px-1 text-xs leading-none font-bold text-navy-950 tabular-nums lg:static lg:ml-1.5 lg:h-5 lg:min-w-5 lg:px-1.5"><span data-inbox-count>{{ $inbox }}</span><span class="sr-only"> tantangan masuk</span></span>
+                            @endif
+                        </a>
                     @endforeach
                 </div>
 
                 <div class="ml-auto flex items-center gap-1">
+                    @if (auth()->user()->isMahasiswa())
+                        <button type="button" data-controller="sound" data-action="sound#toggle" aria-pressed="true" aria-label="Suara game" title="Suara game"
+                            class="group flex size-11 items-center justify-center rounded-lg text-navy-200 transition-colors hover:bg-navy-800 hover:text-white">
+                            <x-icon name="sound" class="size-5 group-aria-[pressed=false]:hidden" />
+                            <x-icon name="mute" class="hidden size-5 group-aria-[pressed=false]:block" />
+                        </button>
+                    @endif
                     <a @isset($lockedDuel) aria-disabled="true" @else href="{{ route('profile.show') }}" @endisset
                         @if (request()->routeIs('profile.*')) aria-current="page" @endif
                         @class(['flex min-h-11 items-center gap-2 rounded-lg px-2 transition-colors', 'hover:bg-navy-800' => ! isset($lockedDuel)])>
                         <x-avatar :user="auth()->user()" size="sm" />
-                        <span class="hidden max-w-40 truncate text-sm font-semibold md:inline">{{ auth()->user()->name }}</span>
-                        @unless (auth()->user()->isAdmin())
+                        <span class="hidden max-w-40 truncate text-sm font-semibold lg:inline">{{ auth()->user()->name }}</span>
+                        @if (auth()->user()->isMahasiswa())
                             <x-tier-badge :points="auth()->user()->points" />
-                        @endunless
+                        @endif
                     </a>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -74,59 +110,24 @@
     @endauth
 
     <main class="mx-auto px-4 py-6 sm:py-8 @yield('width', 'max-w-6xl')">
-        @if (session('success'))
-            <div role="status" class="mb-6 rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm font-medium text-cyan-900">{{ session('success') }}</div>
-        @endif
-        @if (session('error'))
-            <div role="alert" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{{ session('error') }}</div>
-        @endif
-        @error('throttle')
-            <div role="alert" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{{ $message }}</div>
-        @enderror
-
         @yield('content')
     </main>
 
-    <script>
-        function closeMenus(except) {
-            document.querySelectorAll('[data-dropdown-menu]').forEach(function (m) {
-                if (m === except) return;
-                m.classList.add('hidden');
-                var btn = document.querySelector('[data-dropdown-toggle="' + m.id + '"]');
-                if (btn) btn.setAttribute('aria-expanded', 'false');
-            });
-        }
-
-        document.addEventListener('click', function (e) {
-            var toggleBtn = e.target.closest('[data-dropdown-toggle]');
-
-            if (toggleBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                var targetMenu = document.getElementById(toggleBtn.getAttribute('data-dropdown-toggle'));
-                closeMenus(targetMenu);
-
-                if (targetMenu) {
-                    var open = targetMenu.classList.toggle('hidden') === false;
-                    toggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-                }
-                return;
-            }
-
-            if (!e.target.closest('[data-dropdown-menu]')) {
-                closeMenus(null);
-            }
-        });
-
-        // Escape menutup menu, fokus balik
-        document.addEventListener('keydown', function (e) {
-            if (e.key !== 'Escape') return;
-            var open = document.querySelector('[data-dropdown-menu]:not(.hidden)');
-            if (!open) return;
-            closeMenus(null);
-            var btn = document.querySelector('[data-dropdown-toggle="' + open.id + '"]');
-            if (btn) btn.focus();
-        });
-    </script>
+    {{-- Flash dan notifikasi realtime --}}
+    <div class="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex flex-col gap-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:inset-x-auto sm:right-0 sm:w-[26rem] sm:pr-6 sm:pb-6">
+        <div class="flex flex-col gap-2">
+            @if (session('success'))
+                <x-toast role="status">{{ session('success') }}</x-toast>
+            @endif
+            @if (session('error'))
+                <x-toast role="alert" tone="error">{{ session('error') }}</x-toast>
+            @endif
+            @error('throttle')
+                <x-toast role="alert" tone="error">{{ $message }}</x-toast>
+            @enderror
+        </div>
+        <div id="toast-root" data-turbo-permanent aria-live="polite" aria-label="Notifikasi" class="flex flex-col gap-2"></div>
+    </div>
+    <div id="sr-live" data-turbo-permanent aria-live="polite" class="sr-only"></div>
 </body>
 </html>

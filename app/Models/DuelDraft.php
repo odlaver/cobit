@@ -11,6 +11,9 @@ class DuelDraft extends Model
     public const ACTION_PICK = 'pick';
     public const ACTIONS = [self::ACTION_BAN, self::ACTION_PICK];
 
+    public const REASON_TIMEOUT = 'timeout';
+    public const REASON_FORCED = 'forced';
+
     protected $guarded = ['id'];
 
     protected function casts(): array

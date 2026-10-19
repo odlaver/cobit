@@ -45,9 +45,9 @@
                         @php
                             $rival = $duel->opponentOf($user);
                             $result = match (true) {
-                                $duel->winner_id === null => ['Seri', 'bg-navy-100 text-navy-800'],
-                                (int) $duel->winner_id === $user->id => ['Menang', 'bg-ungu-100 text-ungu-700'],
-                                default => ['Kalah', 'bg-red-50 text-red-700'],
+                                $duel->winner_id === null => ['Seri', 'neutral'],
+                                (int) $duel->winner_id === $user->id => ['Menang', 'brand'],
+                                default => ['Kalah', 'danger'],
                             };
                         @endphp
                         <tr>
@@ -58,7 +58,7 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold {{ $result[1] }}">{{ $result[0] }}</span>
+                                <x-badge :tone="$result[1]">{{ $result[0] }}</x-badge>
                                 <span class="ml-1 text-xs tabular-nums text-navy-600 sm:hidden">{{ $duel->rounds->where('winner_id', $user->id)->count() }}:{{ $duel->rounds->where('winner_id', $rival->id)->count() }}</span>
                             </td>
                             <td class="hidden px-4 py-3 tabular-nums sm:table-cell">

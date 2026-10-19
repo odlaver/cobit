@@ -44,7 +44,7 @@
     </x-card>
 
     <!-- Table -->
-    <x-card class="overflow-visible">
+    <x-card class="overflow-x-auto">
         <table class="w-full text-left text-sm">
             <thead class="bg-navy-900 text-xs uppercase tracking-wide text-navy-100">
                 <tr>
@@ -78,21 +78,21 @@
                                 {{ $course->materials_count }} Materi
                             </a>
                         </td>
-                        <td class="hidden px-4 py-3 text-center font-bold sm:table-cell {{ $course->active_questions_count >= 10 ? 'text-ungu-600' : 'text-amber-600' }}">
+                        <td class="hidden px-4 py-3 text-center font-bold sm:table-cell {{ $course->active_questions_count >= \App\Services\DraftService::MIN_QUESTIONS ? 'text-ungu-600' : 'text-amber-600' }}">
                             <a href="{{ route('admin.courses.show', $course) }}" class="hover:underline" title="{{ $course->active_questions_count }} aktif dari {{ $course->questions_count }} soal">
                                 {{ $course->active_questions_count }}
                             </a>
                         </td>
                         <td class="hidden px-4 py-3 text-center md:table-cell">
                             @if ($course->is_active)
-                                <span class="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">Aktif</span>
+                                <x-badge tone="success">Aktif</x-badge>
                             @else
-                                <span class="inline-flex rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-800">Nonaktif</span>
+                                <x-badge>Nonaktif</x-badge>
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <div class="relative inline-block text-left">
-                                <button type="button" data-dropdown-toggle="dropdown-courses-page-{{ $course->id }}" aria-haspopup="true" aria-expanded="false"
+                            <div class="relative inline-block text-left" data-controller="dropdown">
+                                <button type="button" popovertarget="dropdown-courses-page-{{ $course->id }}" data-dropdown-target="button" aria-haspopup="menu" aria-expanded="false"
                                     class="act gap-1.5">
                                     <span>Pilihan</span>
                                     <svg class="h-3.5 w-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -101,8 +101,8 @@
                                 </button>
 
                                 <!-- Dropdown Menu -->
-                                <div id="dropdown-courses-page-{{ $course->id }}" data-dropdown-menu
-                                    class="hidden absolute right-0 z-50 mt-1.5 w-48 rounded-lg border border-slate-200 bg-white py-1.5 shadow-lg ring-1 ring-black/5 focus:outline-none">
+                                <div id="dropdown-courses-page-{{ $course->id }}" popover data-dropdown-target="menu"
+                                    class="fixed inset-auto m-0 w-48 rounded-lg border border-slate-200 bg-white px-0 py-1.5 text-left shadow-lg ring-1 ring-black/5">
                                     <div class="px-3 py-1.5 border-b border-slate-100 text-xs font-bold text-navy-800">
                                         {{ $course->code }} &bull; Sem {{ $course->semester }}
                                     </div>
@@ -136,8 +136,9 @@
                                         </svg>
                                         Edit Matkul
                                     </a>
+                                    @if (auth()->user()->isAdmin())
                                     <form method="POST" action="{{ route('admin.courses.destroy', $course) }}"
-                                        onsubmit="return confirm('Hapus matkul {{ $course->name }} beserta materi dan soalnya?')">
+                                        onsubmit="return confirm(@js('Hapus matkul '.$course->name.' beserta materi dan soalnya?'))">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
@@ -148,6 +149,7 @@
                                             Hapus Matkul
                                         </button>
                                     </form>
+                                    @endif
                                 </div>
                             </div>
                         </td>

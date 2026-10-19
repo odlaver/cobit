@@ -99,10 +99,11 @@ class DraftController extends Controller
 
     private function payload(Duel $duel, User $user, DuelRound $round): array
     {
+        $plan = $this->draft->roundPlan($duel);
         $order = $this->draft->orderForRound($round);
         $step = (int) $duel->draft_step;
-        $running = $step < DraftService::STEPS;
-        $action = $running ? $this->draft->stepAction($step) : null;
+        $running = $step < $plan['steps'];
+        $action = $running ? $this->draft->stepAction($step, $plan['bans']) : null;
         $turnUserId = $running ? ($order[$step] ?? null) : null;
 
         $history = DuelDraft::query()
@@ -112,10 +113,12 @@ class DraftController extends Controller
             ->orderBy('step')
             ->get()
             ->map(fn (DuelDraft $draft) => [
+                'id' => (int) $draft->id,
                 'round' => (int) $draft->round_number,
                 'step' => (int) $draft->step,
                 'action' => $draft->action,
                 'is_auto' => (bool) $draft->is_auto,
+                'auto_reason' => $draft->auto_reason,
                 'user_id' => (int) $draft->user_id,
                 'user_name' => $draft->user?->name,
                 'course_id' => (int) $draft->course_id,
@@ -125,17 +128,20 @@ class DraftController extends Controller
 
         $opponent = $this->opponentOf($duel, $user);
 
-        $roundWins = DuelRound::query()
+        $finished = DuelRound::query()
             ->where('duel_id', $duel->id)
             ->where('status', DuelRound::STATUS_FINISHED)
-            ->whereNotNull('winner_id')
-            ->pluck('winner_id')
-            ->countBy();
+            ->orderBy('round_number')
+            ->get(['round_number', 'winner_id']);
+        $roundWins = $finished->whereNotNull('winner_id')->pluck('winner_id')->countBy();
+        $previous = $finished->last();
 
         return [
             'current_round' => (int) $duel->current_round,
-            'max_round' => DraftService::MAX_ROUNDS,
+            'max_round' => (int) $duel->max_rounds,
             'step' => $step,
+            'steps' => $plan['steps'],
+            'bans' => $plan['bans'],
             'action' => $action,
             'order' => $order,
             'turn_user_id' => $turnUserId,
@@ -147,17 +153,23 @@ class DraftController extends Controller
             'seconds_left' => $this->secondsLeft($duel),
             'pool' => $this->draft->poolState($duel),
             'history' => $history,
+            'last_draft_id' => $history->last()['id'] ?? 0,
             'picks' => $history->where('action', DuelDraft::ACTION_PICK)->groupBy('round'),
             'round_wins' => [
                 $roundWins[(int) $user->id] ?? 0,
                 $roundWins[(int) $opponent->id] ?? 0,
             ],
+            'previous_round' => $previous ? [
+                'number' => (int) $previous->round_number,
+                'winner_id' => $previous->winner_id === null ? null : (int) $previous->winner_id,
+            ] : null,
+            'is_room' => ! empty($duel->challenge?->course_ids),
         ];
     }
 
     private function secondsLeft(Duel $duel): int
     {
-        if ($duel->turn_deadline === null || $duel->draft_step >= DraftService::STEPS) {
+        if ($duel->turn_deadline === null || $duel->draft_step >= $this->draft->steps($duel)) {
             return 0;
         }
 

@@ -80,13 +80,15 @@
                                 <a href="{{ route('admin.materials.edit', $material) }}" class="act">
                                     Edit
                                 </a>
-                                <form method="POST" action="{{ route('admin.materials.destroy', $material) }}" onsubmit="return confirm('Yakin ingin menghapus materi {{ $material->title }}? Semua soal di bawah materi ini akan ikut terhapus.')">
+                                @if (auth()->user()->isAdmin())
+                                <form method="POST" action="{{ route('admin.materials.destroy', $material) }}" onsubmit="return confirm(@js('Yakin ingin menghapus materi '.$material->title.'? Semua soal di bawah materi ini akan ikut terhapus.'))">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="act act-danger">
                                         Hapus
                                     </button>
                                 </form>
+                                @endif
                             </div>
                         </td>
                     </tr>

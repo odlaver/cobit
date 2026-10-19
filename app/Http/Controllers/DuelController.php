@@ -88,6 +88,8 @@ class DuelController extends Controller
             ],
             'mastery' => $this->mastery($rounds, $user->id, $opponent->id),
             'canRematch' => Route::has('challenges.store'),
+            'room' => $duel->challenge,
+            'delta' => $duel->deltaFor($user),
         ]);
     }
 

@@ -19,7 +19,7 @@
                 <x-input name="email" label="Email" type="email" :value="old('email')" placeholder="nama@email.com" required autofocus autocomplete="username" />
                 <x-input name="password" label="Kata sandi" type="password" placeholder="••••••••" required autocomplete="current-password" />
 
-                <label class="flex items-center gap-2.5 text-sm text-slate-600">
+                <label class="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm text-slate-600">
                     <input type="checkbox" name="remember" class="size-4 rounded border-slate-300 accent-ungu-500"> Ingat saya
                 </label>
 

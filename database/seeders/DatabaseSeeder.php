@@ -18,6 +18,11 @@ class DatabaseSeeder extends Seeder
             'role' => User::ROLE_ADMIN, 'prodi' => 'SI', 'angkatan' => 24, 'points' => 0,
         ]);
 
+        User::updateOrCreate(['email' => 'asdos@cobit.test'], [
+            'name' => 'Asisten Dosen', 'npm' => 'ASDOS001', 'password' => Hash::make('password'),
+            'role' => User::ROLE_ASDOS, 'prodi' => 'SI', 'angkatan' => 22, 'points' => 0,
+        ]);
+
         foreach (range(1, 6) as $index) {
             User::updateOrCreate(['email' => "mahasiswa{$index}@cobit.test"], [
                 'name' => "Mahasiswa {$index}", 'npm' => '241000'.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
@@ -26,6 +31,6 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $this->call(BankSoalSeeder::class);
+        $this->call([KurikulumSeeder::class, BankSoalSeeder::class]);
     }
 }

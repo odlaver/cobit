@@ -17,6 +17,8 @@ class Question extends Model
 
     public const SOURCES = ['manual', 'ai'];
 
+    public const DIFFICULTIES = ['mudah' => 'Mudah', 'sedang' => 'Sedang', 'sulit' => 'Sulit'];
+
     public const ANSWERS = ['a', 'b', 'c', 'd'];
 
     protected $guarded = ['id'];

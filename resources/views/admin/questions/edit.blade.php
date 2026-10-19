@@ -59,7 +59,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 border-t border-slate-100 pt-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 border-t border-slate-100 pt-4">
                 <div>
                     <label for="correct_answer" class="field-label">Kunci Jawaban Benar</label>
                     <select id="correct_answer" name="correct_answer" required
@@ -70,6 +70,18 @@
                         <option value="d" @selected(old('correct_answer', $question->correct_answer) === 'd')>Pilihan D</option>
                     </select>
                     @error('correct_answer')
+                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="difficulty" class="field-label">Tingkat kesulitan</label>
+                    <select id="difficulty" name="difficulty" required class="field py-2.5">
+                        @foreach (\App\Models\Question::DIFFICULTIES as $value => $label)
+                            <option value="{{ $value }}" @selected(old('difficulty', $question->difficulty) === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('difficulty')
                         <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>

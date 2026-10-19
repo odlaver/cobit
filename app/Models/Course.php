@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\DraftService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,5 +31,12 @@ class Course extends Model
     public function questions(): HasManyThrough
     {
         return $this->hasManyThrough(Question::class, Material::class);
+    }
+
+    // Aktif dan cukup soal untuk duel
+    public function scopeEligible(Builder $query): void
+    {
+        $query->where('is_active', true)
+            ->whereHas('questions', fn (Builder $inner) => $inner->where('status', Question::STATUS_ACTIVE), '>=', DraftService::MIN_QUESTIONS);
     }
 }

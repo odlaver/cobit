@@ -15,7 +15,7 @@ class ProfileController extends Controller
     public function show(Request $request, ?User $user = null): View
     {
         $user ??= $request->user();
-        $rank = $user->isAdmin() ? null : User::mahasiswa()->where('points', '>', $user->points)->count() + 1;
+        $rank = ! $user->isMahasiswa() ? null : User::mahasiswa()->where('points', '>', $user->points)->count() + 1;
 
         return view('profile.show', compact('user', 'rank'));
     }

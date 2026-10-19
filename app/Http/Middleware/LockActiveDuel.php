@@ -14,7 +14,9 @@ class LockActiveDuel
     private const ALLOWED = [
         'logout',
         'challenges.status',
+        'presence',
         'duels.show',
+        'duels.result',
         'duels.draft',
         'duels.draft.store',
         'duels.state',
@@ -27,11 +29,11 @@ class LockActiveDuel
     {
         $user = $request->user();
 
-        if (! $user || $user->isAdmin()) {
+        if (! $user || ! $user->isMahasiswa()) {
             return $next($request);
         }
 
-        $duel = $user->duels()->where('status', '!=', Duel::STATUS_FINISHED)->latest('id')->first();
+        $duel = $user->duels()->active()->latest('id')->first();
 
         if (! $duel) {
             return $next($request);

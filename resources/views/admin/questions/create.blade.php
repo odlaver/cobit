@@ -20,7 +20,7 @@
     @if ($selectedCourse)
         <div class="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-ungu-200 bg-ungu-50 p-4">
             <div class="flex items-center gap-3">
-                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-ungu-600 text-white font-mono text-xs font-bold">
+                <span class="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg bg-ungu-600 px-1.5 font-mono text-xs font-bold text-white">
                     {{ $selectedCourse->code }}
                 </span>
                 <div>
@@ -127,7 +127,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 border-t border-slate-100 pt-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 border-t border-slate-100 pt-4">
                     <div>
                         <label for="correct_answer" class="field-label">Kunci Jawaban Benar <span class="text-red-500">*</span></label>
                         <select id="correct_answer" name="correct_answer" required
@@ -139,6 +139,18 @@
                             <option value="d" @selected(old('correct_answer') === 'd')>Pilihan D</option>
                         </select>
                         @error('correct_answer')
+                            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label for="difficulty" class="field-label">Tingkat kesulitan</label>
+                        <select id="difficulty" name="difficulty" required class="field py-2.5">
+                            @foreach (\App\Models\Question::DIFFICULTIES as $value => $label)
+                                <option value="{{ $value }}" @selected(old('difficulty', 'sedang') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('difficulty')
                             <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>

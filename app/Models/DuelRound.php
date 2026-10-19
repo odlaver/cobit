@@ -20,6 +20,7 @@ class DuelRound extends Model
     {
         return [
             'round_number' => 'integer',
+            'starts_at' => 'datetime',
         ];
     }
 

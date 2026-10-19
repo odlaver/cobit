@@ -15,7 +15,7 @@
         </div>
     </div>
 
-    <x-card class="overflow-x-auto">
+    <x-card class="overflow-x-auto" data-controller="presence">
         <table class="w-full text-left text-sm">
             <thead class="bg-navy-900 text-xs uppercase tracking-wide text-navy-100">
                 <tr>
@@ -30,13 +30,13 @@
                     <tr @class(['bg-ungu-50' => $user->is(auth()->user())])>
                         <td class="px-3 py-3 sm:px-4 font-bold tabular-nums text-navy-600">{{ $users->firstItem() + $loop->index }}</td>
                         <td class="px-3 py-3 sm:px-4">
-                            <a href="{{ route('profile.user', $user) }}" class="flex items-center gap-3 hover:underline">
-                                <x-avatar :user="$user" size="sm" />
+                            <a href="{{ route('profile.user', $user) }}" class="flex min-h-11 items-center gap-3 hover:underline">
+                                <x-avatar :user="$user" size="sm" :presence="$user->presence(in_array($user->id, $busy, true))" />
                                 <span>
                                     <span class="block font-semibold">
                                         {{ $user->name }}
                                         @if ($user->is(auth()->user()))
-                                            <span class="ml-1 rounded bg-ungu-500 px-1.5 py-0.5 text-xs font-bold text-white">kamu</span>
+                                            <x-badge tone="dark" class="ml-1">kamu</x-badge>
                                         @endif
                                     </span>
                                     <span class="block text-xs text-navy-500">{{ $user->npm }}</span>

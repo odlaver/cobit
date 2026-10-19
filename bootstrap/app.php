@@ -15,8 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => \App\Http\Middleware\EnsureRole::class,
+            'keep.flash' => \App\Http\Middleware\KeepFlash::class,
         ]);
-        $middleware->appendToGroup('web', \App\Http\Middleware\LockActiveDuel::class);
+        $middleware->trustProxies(at: '*');
+        $middleware->appendToGroup('web', [
+            \App\Http\Middleware\TouchLastSeen::class,
+            \App\Http\Middleware\LockActiveDuel::class,
+        ]);
         $middleware->redirectUsersTo('/');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
