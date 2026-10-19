@@ -6,6 +6,7 @@ use App\Models\Duel;
 use App\Models\DuelAnswer;
 use App\Models\DuelDraft;
 use App\Models\DuelRound;
+use App\Models\User;
 use App\Services\ScoringService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,8 @@ use Illuminate\View\View;
 
 class DuelController extends Controller
 {
+    private const TIER_POPUP_MINUTES = 30;
+
     public function __construct(private ScoringService $scoring)
     {
     }
@@ -76,9 +79,12 @@ class DuelController extends Controller
             'mistakes' => $this->mistakes($round, $user->id),
         ]);
 
+        $fresh = $user->fresh();
+        $delta = $duel->deltaFor($user);
+
         return view('duels.result', [
             'duel' => $duel,
-            'user' => $user->fresh(),
+            'user' => $fresh,
             'opponent' => $opponent,
             'outcome' => $this->outcome($duel, $user->id),
             'summary' => $summary,
@@ -89,8 +95,43 @@ class DuelController extends Controller
             'mastery' => $this->mastery($rounds, $user->id, $opponent->id),
             'canRematch' => Route::has('challenges.store'),
             'room' => $duel->challenge,
-            'delta' => $duel->deltaFor($user),
+            'delta' => $delta,
+            'tierChange' => $this->tierChange($duel, $fresh, $delta),
         ]);
+    }
+
+    // Poin sekarang hanya bisa dipakai untuk duel terakhir
+    private function tierChange(Duel $duel, User $user, ?int $delta): ?array
+    {
+        if ($delta === null || $duel->status !== Duel::STATUS_FINISHED) {
+            return null;
+        }
+
+        $latest = $user->duels()->where('status', Duel::STATUS_FINISHED)->latest('finished_at')->latest('id')->value('id');
+
+        if ((int) $latest !== (int) $duel->id) {
+            return null;
+        }
+
+        $from = User::tierFor($user->points - $delta);
+        $to = $user->tier;
+
+        if ($from === $to) {
+            return null;
+        }
+
+        $floor = User::TIERS[$to];
+        $next = collect(User::TIERS)->filter(fn (int $min) => $min > $floor)->sort()->keys()->first();
+
+        return [
+            'from' => $from,
+            'to' => $to,
+            'up' => $floor > User::TIERS[$from],
+            'next' => $next,
+            'to_next' => $next ? User::TIERS[$next] - $user->points : null,
+            'progress' => $next ? (int) round(($user->points - $floor) / (User::TIERS[$next] - $floor) * 100) : 100,
+            'popup' => $duel->finished_at?->gt(now()->subMinutes(self::TIER_POPUP_MINUTES)) ?? false,
+        ];
     }
 
     private function outcome(Duel $duel, int $userId): string

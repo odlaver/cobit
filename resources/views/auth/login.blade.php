@@ -1,7 +1,25 @@
 @extends('layouts.app')
 
 @section('title', 'Masuk')
+@section('description', 'Masuk ke COBIT, duel kuis 1 lawan 1 antar mahasiswa Sistem Informasi dan Ilmu Komputer. Draft matkul, jawab soal, dan naik tier.')
 @section('width', 'max-w-sm')
+
+@push('head')
+    @php
+        $schema = [
+            '@context' => 'https://schema.org',
+            '@type' => 'WebApplication',
+            'name' => config('app.name'),
+            'alternateName' => 'Combat of Brains in Tournament',
+            'url' => url('/'),
+            'applicationCategory' => 'EducationalApplication',
+            'operatingSystem' => 'Web',
+            'inLanguage' => 'id',
+            'description' => 'Duel kuis 1 lawan 1 antar mahasiswa dengan draft ban dan pick mata kuliah, 10 soal per ronde, dan tier Noob sampai God.',
+        ];
+    @endphp
+    <script type="application/ld+json">{!! json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
+@endpush
 
 @section('content')
     <div class="mx-auto w-full max-w-sm pt-6 sm:pt-12">

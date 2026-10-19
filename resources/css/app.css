@@ -56,6 +56,54 @@
     }
 }
 
+/* Momen naik tier */
+@keyframes tier-pop {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.96);
+    }
+}
+
+@keyframes tier-fade {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes tier-stamp {
+    0% {
+        opacity: 0;
+        transform: scale(1.6) rotate(-8deg);
+    }
+    60% {
+        opacity: 1;
+        transform: scale(0.94) rotate(2deg);
+    }
+    100% {
+        transform: scale(1) rotate(0);
+    }
+}
+
+.tier-dialog[open] {
+    animation: tier-pop 0.25s ease-out;
+}
+
+.tier-dialog[open]::backdrop {
+    animation: tier-fade 0.25s ease-out;
+}
+
+.tier-dialog[open] .tier-emblem {
+    animation: tier-stamp 0.55s 0.1s cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tier-dialog[open],
+    .tier-dialog[open]::backdrop,
+    .tier-dialog[open] .tier-emblem {
+        animation: none;
+    }
+}
+
 @layer components {
     /* Tombol aksi kecil di baris */
     .act {

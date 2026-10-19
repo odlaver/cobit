@@ -1,10 +1,35 @@
+@php
+    $pageTitle = trim($__env->yieldContent('title'));
+    $fullTitle = $pageTitle !== '' ? $pageTitle . ' · ' . config('app.name') : config('app.name');
+    $description = trim($__env->yieldContent('description')) ?: 'Duel kuis 1 lawan 1 antar mahasiswa. Draft matkul dengan ban dan pick, jawab 10 soal, kumpulkan poin, dan naik tier dari Noob sampai God.';
+@endphp
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@hasSection('title')@yield('title') · @endif{{ config('app.name') }}</title>
+    <title>{{ $fullTitle }}</title>
+    <meta name="description" content="{{ $description }}">
+    <link rel="canonical" href="{{ url()->current() }}">
+    @auth
+        <meta name="robots" content="noindex, nofollow">
+    @endauth
+    <meta name="theme-color" content="#141838">
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="48x48">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ asset('favicon-96.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ config('app.name') }}">
+    <meta property="og:locale" content="id_ID">
+    <meta property="og:title" content="{{ $fullTitle }}">
+    <meta property="og:description" content="{{ $description }}">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:image" content="{{ asset('og-image.png') }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="COBIT, duel kuis 1 lawan 1 antar mahasiswa">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="turbo-prefetch" content="false">
     <meta name="turbo-cache-control" content="no-cache">
     @stack('head')

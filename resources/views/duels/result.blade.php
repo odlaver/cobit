@@ -47,6 +47,9 @@
                     @if ($delta !== null)
                         <strong class="text-base tabular-nums" data-result-target="number" data-to="{{ $delta }}" data-sign="true">{{ $signed($delta) }}</strong> poin dari duel ini.
                         Poinmu sekarang <strong class="tabular-nums">{{ $user->points }}</strong>.
+                        @if ($tierChange)
+                            <span class="whitespace-nowrap">{{ $tierChange['up'] ? 'Naik ke tier' : 'Turun ke tier' }} <strong>{{ $tierChange['to'] }}</strong>.</span>
+                        @endif
                     @else
                         Poinmu sekarang <strong>{{ $user->points }}</strong>.
                         Menang +{{ \App\Services\ScoringService::WIN_POINTS }}, seri +{{ \App\Services\ScoringService::DRAW_POINTS }}, kalah −{{ \App\Services\ScoringService::LOSS_POINTS }}.
@@ -173,5 +176,39 @@
             <x-button variant="secondary" :href="route('duels.index')">Riwayat duel</x-button>
             <x-button variant="ghost" :href="route('dashboard')">Dashboard</x-button>
         </div>
+
+        @if ($tierChange && $tierChange['up'] && $tierChange['popup'])
+            @php
+                $emblem = [
+                    'God' => 'bg-amber-400 text-amber-950',
+                    'Hacker' => 'bg-ungu-500 text-white',
+                    'Pro' => 'bg-cyan-400 text-navy-950',
+                ][$tierChange['to']] ?? 'bg-navy-900 text-white';
+            @endphp
+            {{-- Rayakan naik tier, sekali per duel --}}
+            <dialog data-result-target="tier" data-tier="{{ $tierChange['to'] }}" aria-label="Naik tier ke {{ $tierChange['to'] }}"
+                data-action="click->result#closeTierOutside"
+                class="tier-dialog m-auto w-[calc(100%-2rem)] max-w-sm overflow-visible rounded-2xl bg-white p-0 text-navy-900 shadow-2xl shadow-navy-950/30 backdrop:bg-navy-950/70">
+                <div class="px-6 pt-8 pb-6 text-center">
+                    <p class="text-sm font-semibold text-ungu-600">Naik tier</p>
+                    <div class="relative mx-auto mt-4 size-28">
+                        <span data-result-target="burst" class="absolute inset-0" aria-hidden="true"></span>
+                        <p class="tier-emblem flex size-28 items-center justify-center rounded-3xl text-2xl font-extrabold tracking-wide uppercase {{ $emblem }}">{{ $tierChange['to'] }}</p>
+                    </div>
+                    <p class="mt-5 text-sm text-navy-600">{{ $tierChange['from'] }} ke {{ $tierChange['to'] }} · {{ $user->points }} poin</p>
+
+                    @if ($tierChange['next'])
+                        <div class="mt-4 h-2 overflow-hidden rounded-full bg-navy-100">
+                            <div data-result-target="tierBar" data-width="{{ $tierChange['progress'] }}" class="h-full w-0 rounded-full bg-ungu-500 transition-[width] duration-700 ease-out"></div>
+                        </div>
+                        <p class="mt-2 text-xs text-navy-600">{{ $tierChange['to_next'] }} poin lagi ke {{ $tierChange['next'] }}</p>
+                    @else
+                        <p class="mt-4 text-xs font-semibold text-amber-800">Tier tertinggi</p>
+                    @endif
+
+                    <x-button type="button" class="mt-6 w-full" data-action="result#closeTier">Lanjut</x-button>
+                </div>
+            </dialog>
+        @endif
     </div>
 @endsection

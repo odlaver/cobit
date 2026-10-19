@@ -7,6 +7,7 @@ use App\Http\Controllers\BattleController;
 use App\Http\Controllers\DuelController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\PresenceController;
+use App\Http\Controllers\SeoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -24,6 +25,9 @@ Route::get('/', function () {
 
     return redirect()->route($user->homeRoute());
 })->name('home');
+
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('robots');
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

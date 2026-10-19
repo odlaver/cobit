@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Daftar')
+@section('description', 'Daftar akun COBIT untuk ikut duel kuis 1 lawan 1 antar mahasiswa, kumpulkan poin, dan naik tier.')
 @section('width', 'max-w-sm')
 
 @section('content')

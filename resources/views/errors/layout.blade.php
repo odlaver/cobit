@@ -5,6 +5,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title }} · {{ config('app.name') }}</title>
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#0c0f26">
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="48x48">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ asset('favicon-96.png') }}">
     <meta name="turbo-visit-control" content="reload">
     @fonts
     @vite(['resources/css/app.css'])
